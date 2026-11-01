@@ -15,6 +15,10 @@
       "nazev": "Windchill: dotaz na číslo dílu",
       "skript": "%USERPROFILE%/Skripty/windchill/dotaz.py",
       "argumenty": ["{zadat:Číslo dílu (PN)}", "--xlsx", "{cil}/dotaz_vysledek.xlsx"]
+    },
+    {
+      "nazev": "Windchill: aktualizovat index",
+      "skript": "%USERPROFILE%/Skripty/windchill/Aktualizovat_index.bat"
     }
   ]
 }

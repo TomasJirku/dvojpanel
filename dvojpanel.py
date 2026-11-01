@@ -17,7 +17,7 @@ Ovládání:
   Esc přerušit kopírování   Ctrl+R obnovit   Ctrl+Q konec
   Klik na záhlaví sloupce = řazení
 """
-__version__ = "0.3.0"
+__version__ = "0.4.0"
 
 import json
 import os
@@ -39,6 +39,7 @@ APP_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = APP_DIR / "nastroje.json"
 CONFIG_EXAMPLE = APP_DIR / "nastroje.example.json"
 FAVORITES_FILE = APP_DIR / "oblibene.json"
+ICON_FILE = APP_DIR / "dvojpanel.ico"
 PLACEHOLDER = re.compile(r"\{(\w+)(?::([^}]*))?\}")
 CHUNK = 1024 * 1024
 BIG_FILE = 16 * 1024 * 1024  # files from this size up report progress in percent
@@ -194,6 +195,44 @@ def progress_copier(label, report, cancel):
                    done * 100 / total)
         return copy_file(src, dst, progress, cancel)
     return copier
+
+
+def gui_python_executable():
+    """pythonw.exe of the running interpreter (no console window), falling back to the interpreter itself."""
+    exe = sys.executable
+    if exe.lower().endswith("python.exe"):
+        alt = exe[: -len("python.exe")] + "pythonw.exe"
+        if os.path.exists(alt):
+            return alt
+    return exe
+
+
+def start_menu_folder():
+    return Path(os.environ.get("APPDATA", "")) / "Microsoft" / "Windows" / "Start Menu" / "Programs"
+
+
+def create_shortcut(folder):
+    """Create Dvojpanel.lnk in folder (target pythonw.exe, so the running window groups with a pinned icon).
+
+    Uses the WScript.Shell COM object through PowerShell, both part of Windows. Returns the .lnk path.
+    """
+    lnk = Path(folder) / "Dvojpanel.lnk"
+    env = dict(os.environ, DP_LNK=str(lnk), DP_TARGET=gui_python_executable(),
+               DP_ARGS=f'"{APP_DIR / "dvojpanel.py"}"', DP_DIR=str(APP_DIR),
+               DP_ICON=str(ICON_FILE) if ICON_FILE.exists() else "")
+    script = ("$s = (New-Object -ComObject WScript.Shell).CreateShortcut($env:DP_LNK); "
+              "$s.TargetPath = $env:DP_TARGET; $s.Arguments = $env:DP_ARGS; "
+              "$s.WorkingDirectory = $env:DP_DIR; $s.Description = 'Dvojpanel - správce souborů'; "
+              "if ($env:DP_ICON) { $s.IconLocation = $env:DP_ICON + ',0' }; $s.Save()")
+    try:
+        result = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", script], env=env,
+                                capture_output=True, text=True, errors="replace", timeout=60,
+                                creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise OSError(f"Nelze spustit PowerShell: {e}") from e
+    if result.returncode != 0 or not lnk.exists():
+        raise OSError(result.stderr.strip() or "PowerShell zástupce nevytvořil.")
+    return lnk
 
 
 def open_with_default_app(path):
@@ -974,6 +1013,11 @@ class App(tk.Tk):
         super().__init__()
         self.title(f"Dvojpanel {__version__}")
         self.geometry("1150x760")
+        if IS_WINDOWS and ICON_FILE.exists():
+            try:
+                self.iconbitmap(default=str(ICON_FILE))  # default= also applies to dialogs
+            except tk.TclError:
+                pass
         self.busy = False
         self.proc = None
         self.tools, self.tools_error = [], None
@@ -1228,6 +1272,8 @@ class App(tk.Tk):
         file_menu = tk.Menu(menubar, tearoff=False)
         file_menu.add_command(label="Obnovit", accelerator="Ctrl+R", command=self.reload_both)
         file_menu.add_separator()
+        file_menu.add_command(label="Vytvořit zástupce v nabídce Start…", command=self.make_shortcut)
+        file_menu.add_separator()
         file_menu.add_command(label="Konec", accelerator="Ctrl+Q", command=self.on_close)
         menubar.add_cascade(label="Soubor", menu=file_menu)
         cmd_menu = tk.Menu(menubar, tearoff=False)
@@ -1245,6 +1291,22 @@ class App(tk.Tk):
         self.configure(menu=menubar)
         self.reload_tools(startup=True)
         self.reload_favorites(startup=True)
+
+    def make_shortcut(self):
+        if not IS_WINDOWS:
+            messagebox.showinfo("Zástupce", "Zástupce lze vytvořit jen ve Windows.")
+            return
+        try:
+            lnk = create_shortcut(start_menu_folder())
+        except OSError as e:
+            messagebox.showerror("Zástupce", f"Zástupce se nepodařilo vytvořit:\n{e}\n\n"
+                                 "Ručně: pravým tlačítkem na plochu → Nový → Zástupce, umístění:\n"
+                                 f"\"{gui_python_executable()}\" \"{APP_DIR / 'dvojpanel.py'}\"")
+            return
+        messagebox.showinfo("Zástupce", f"Zástupce vytvořen:\n{lnk}\n\n"
+                            "Připnutí na hlavní panel: Start → napiš „Dvojpanel“ → pravým tlačítkem → "
+                            "Připnout na hlavní panel.\n\n"
+                            "Po aktualizaci Pythonu nebo přesunu složky programu zástupce vytvoř znovu.")
 
     # -- favorites
     def fill_favorites_menu(self, menu):
@@ -1420,7 +1482,7 @@ class App(tk.Tk):
 
         line = cmd if isinstance(cmd, str) else subprocess.list2cmdline(cmd)
         self.log(f"\n▶ {tool['nazev']}\n  {line}\n  (složka: {cwd})\n")
-        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1")
+        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", DVOJPANEL=__version__)
         try:
             proc = subprocess.Popen(
                 cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,

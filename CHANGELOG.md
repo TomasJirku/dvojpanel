@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.4.0 – 2026-11-01
+- Soubor → Vytvořit zástupce v nabídce Start: zástupce s ikonou, který lze připnout na hlavní panel Windows 11.
+- Vlastní ikona programu (`dvojpanel.ico`) v okně i na hlavním panelu.
+- Nástroje dostávají proměnnou prostředí `DVOJPANEL` (verze), aby skript poznal, že běží z Dvojpanelu.
+- Šablona `nastroje.example.json`: nový nástroj „Windchill: aktualizovat index“ (`Aktualizovat_index.bat`).
+
 ## 0.3.0 – 2026-11-01
 - Průběh v procentech (stavový řádek + ukazatel) při kopírování a přesunu souborů od 16 MB; Esc přeruší.
 - Kopírování přes dočasný soubor: přerušené nebo selhané kopírování nepoškodí existující cíl.

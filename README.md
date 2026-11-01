@@ -12,6 +12,16 @@ pythonw dvojpanel.py
 
 `pythonw` spustí program bez konzolového okna. Pro ladění lze použít `python dvojpanel.py`.
 
+### Spouštění z hlavního panelu (Windows 11)
+
+Windows neumí připnout na hlavní panel přímo `.py` soubor, proto program vytvoří zástupce:
+
+1. Spusť program poprvé, např. přes Win+R: `pythonw "C:\cesta\k\dvojpanel.py"`.
+2. Menu **Soubor → Vytvořit zástupce v nabídce Start**.
+3. Start → napiš „Dvojpanel“ → pravým tlačítkem → **Připnout na hlavní panel**.
+
+Zástupce spouští `pythonw.exe` aktuálního Pythonu, takže se běžící okno sloučí s připnutou ikonou. Po aktualizaci Pythonu nebo přesunu složky programu vytvoř zástupce znovu (přepíše se) a připni ho znovu.
+
 ## Ovládání
 
 | Klávesa | Akce |
@@ -111,6 +121,7 @@ Cesty mohou používat `/` i `\` (v JSONu se zpětné lomítko musí zdvojit) a 
 - Skript nesmí čekat na `input()`. Vstup je zavřený, takže `input()` skončí chybou místo zamrznutí. Hodnoty předávej argumenty nebo přes `{zadat:...}`.
 - Návratový kód 0 znamená úspěch, cokoli jiného chybu.
 - Běží vždy jen jeden nástroj; zastavit ho lze v menu Nástroje.
+- Nástroj dostane proměnnou prostředí `DVOJPANEL` (verze programu), podle které pozná, že běží z Dvojpanelu. Např. `.bat`, který po dvojkliku čeká (`pause`/`timeout`), může čekání přeskočit: `if defined DVOJPANEL exit /b 0`. Jinak `timeout` vypíše „Input redirection is not supported“ (vstup je zavřený) a skončí, výsledek nástroje to neovlivní.
 
 ## Licence
 
