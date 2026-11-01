@@ -17,7 +17,7 @@ Ovládání:
   Esc přerušit kopírování   Ctrl+R obnovit   Ctrl+Q konec
   Klik na záhlaví sloupce = řazení
 """
-__version__ = "0.5.1"
+__version__ = "0.5.2"
 
 import json
 import os
@@ -237,7 +237,8 @@ def create_shortcut(folder):
 
 def open_with_default_app(path):
     if IS_WINDOWS:
-        os.startfile(path)
+        # like Explorer: a .bat that relies on its working directory finds its files
+        os.startfile(path, cwd=os.path.dirname(os.path.abspath(path)))
     else:
         subprocess.Popen(["xdg-open", path])
 

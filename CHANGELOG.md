@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.2 – 2026-11-01
+- Oprava: Enter / dvojklik spustí soubor s pracovní složkou v jeho složce, jako Průzkumník.
+  `.bat`, který počítá s vlastní složkou, dřív běžel ve složce Dvojpanelu a nenašel své soubory.
+
 ## 0.5.1 – 2026-11-01
 - Šablona `nastroje.example.json`: „Windchill: dotaz“ běží přes `.venv` projektu (jinak chyběl `openpyxl`
   a `requests`) a ukládá do nového `vystupy\zmeny_<datum_čas>.xlsx` místo přepisování jednoho souboru.
