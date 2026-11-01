@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.3.0 – 2026-11-01
+- Průběh v procentech (stavový řádek + ukazatel) při kopírování a přesunu souborů od 16 MB; Esc přeruší.
+- Kopírování přes dočasný soubor: přerušené nebo selhané kopírování nepoškodí existující cíl.
+- Označování položek Mezerníkem a Insertem jako v NC (červeně), Ctrl+A označí vše / zruší označení.
+  Označené položky mají přednost před výběrem, po úspěšné operaci se označení zruší.
+- Porovnání a synchronizace složek (Ctrl+S): binárně nebo podle velikosti a času, s podsložkami,
+  volba směru u každé položky, synchronizace jen kopíruje a před přepsáním souborů je vypíše.
+- Oblíbené složky (menu Oblíbené, Ctrl+D) v lokálním `oblibene.json`; nedostupná síťová cesta nezablokuje okno.
+
+## 0.2.1 – 2026-11-01
+- Oprava: `.bat`/`.cmd` nástroj ve složce s mezerou v cestě selhal, pokud měl argument s mezerou
+  (např. soubor s mezerou v názvu přes `{soubory}`).
+- Oprava: Shift+šipky nahoru/dolů rozšiřují výběr, jak uvádí README (dříve jen posouvaly kurzor).
+
 ## 0.2.0 – 2026-11-01
 - Nástroje: spouštění vlastních skriptů nad vybranými soubory (F9, menu Nástroje).
 - Konfigurace v `nastroje.json` (lokální, mimo Git), šablona `nastroje.example.json`.

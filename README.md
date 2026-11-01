@@ -19,14 +19,50 @@ pythonw dvojpanel.py
 | Tab | přepnutí panelu |
 | Enter / dvojklik | otevřít složku nebo soubor |
 | Backspace | o úroveň výš |
-| Ctrl+klik, Shift+šipky, Ctrl+A | výběr více položek |
+| Mezerník / Insert | označit / odznačit položku a posunout kurzor dolů (jako v NC) |
+| Ctrl+A | označit vše; podruhé označení zruší |
+| Ctrl+klik, Shift+šipky | výběr více položek myší / klávesnicí |
 | F2 | přejmenovat |
 | F3 / F4 | otevřít / upravit v Notepadu |
 | F5 / F6 | kopírovat / přesunout do druhého panelu |
 | F7 | nová složka |
 | F8 | smazat do koše (na síťovém disku trvale, program varuje) |
 | F9 | nabídka nástrojů |
+| Ctrl+D | oblíbené složky |
+| Ctrl+S | porovnat a synchronizovat složky |
+| Esc | přerušit probíhající kopírování / přesun |
 | Ctrl+R / Ctrl+Q | obnovit / konec |
+
+Označené položky (červeně) mají přednost před výběrem: F5, F6, F8 i nástroje pracují s označenými, a pokud žádné nejsou, s vybranými. Po úspěšném kopírování nebo přesunu se označení zruší, při přechodu do jiné složky také.
+
+U souborů od 16 MB se při kopírování ukazuje průběh v procentech ve stavovém řádku. Soubor se nejdřív zapisuje do dočasného souboru `*.dvojpanel-tmp` a teprve po dokončení nahradí cíl, takže přerušené nebo selhané kopírování nikdy nepoškodí existující soubor v cíli.
+
+## Porovnání a synchronizace složek
+
+**Příkazy → Porovnat a synchronizovat složky** (Ctrl+S) porovná složky z levého a pravého panelu (cesty lze v okně změnit).
+
+- **Porovnat obsah binárně** porovná soubory bajt po bajtu. Bez této volby se porovnává jen velikost a čas změny (tolerance 2 s).
+- **Včetně podsložek** projde celý strom. Složka, která je jen na jedné straně, se ukáže jako jeden řádek a zkopíruje se celá.
+- Výchozí akce: co je jen na jedné straně, se zkopíruje na druhou; u rozdílných souborů vyhrává novější. Rozdílné soubory se stejným časem a konflikty soubor × složka zůstanou bez akce.
+- Akci u vybraných řádků lze změnit klávesami → / ← / mezerník nebo tlačítky.
+- **Synchronizovat** jen kopíruje, nic nemaže. Před spuštěním vypíše soubory, které se přepíšou. Po dokončení se složky porovnají znovu.
+
+## Oblíbené složky
+
+Menu **Oblíbené** (nebo Ctrl+D) otevře uloženou složku v aktivním panelu. **Přidat aktuální složku** uloží složku aktivního panelu, **Odebrat** ji smaže ze seznamu. Nedostupná síťová složka nezablokuje okno, program jen ohlásí chybu.
+
+Seznam je v `oblibene.json` vedle `dvojpanel.py` (lokální, není v Gitu) a lze ho upravit i ručně (**Upravit oblibene.json**, pak **Načíst oblíbené znovu**):
+
+```json
+{
+  "oblibene": [
+    {"nazev": "Projekt 1234", "cesta": "\\\\server\\projekty\\P-1234"},
+    {"nazev": "Skripty", "cesta": "%USERPROFILE%/Skripty"}
+  ]
+}
+```
+
+`cesta` je povinná, `nazev` volitelný (jinak se v menu ukáže cesta). Platí stejná pravidla pro cesty jako u nástrojů.
 
 ## Nástroje
 
