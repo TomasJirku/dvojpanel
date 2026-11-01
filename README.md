@@ -97,7 +97,7 @@ Nástroje se definují v `nastroje.json` vedle `dvojpanel.py`. Při prvním spu�
 | `nazev` | ano | text v menu |
 | `skript` | ano | cesta ke skriptu (`.py`, `.bat`, `.cmd`, `.exe`); relativní cesta je vůči složce programu |
 | `argumenty` | ne | seznam argumentů, může obsahovat zástupné symboly |
-| `pripony` | ne | povolené přípony vybraných souborů, např. `[".xlsx"]` |
+| `pripony` | ne | povolené přípony vybraných souborů (a `{soubor_cil}`, pokud ho nástroj používá), např. `[".xlsx"]` |
 | `pracovni_slozka` | ne | pracovní složka; výchozí je složka skriptu |
 | `zobrazit_slozku` | ne | po úspěšném doběhnutí se tato složka otevře v druhém panelu |
 | `python` | ne | jiný interpret, např. Python z virtuálního prostředí |
@@ -109,11 +109,24 @@ Cesty mohou používat `/` i `\` (v JSONu se zpětné lomítko musí zdvojit) a 
 | Symbol | Nahradí se |
 |---|---|
 | `{soubory}` | všemi vybranými soubory v aktivním panelu (každý jako samostatný argument; musí stát v argumentu sám) |
-| `{soubor}` | souborem pod kurzorem |
+| `{soubor}` | souborem pod kurzorem v aktivním panelu |
+| `{soubor_cil}` | souborem pod kurzorem ve druhém panelu |
 | `{slozka}` | složkou aktivního panelu |
 | `{cil}` | složkou druhého panelu |
 | `{skript_slozka}` | složkou skriptu |
 | `{zadat:Popisek}` | hodnotou, na kterou se program zeptá v dialogu |
+
+Dva soubory ve správném pořadí (např. cílový sešit a zdrojový export) předáš tak, že jeden máš pod kurzorem v aktivním panelu a druhý ve druhém panelu:
+
+```json
+{
+  "nazev": "Windchill: přehled PN podle SAP (kontrola)",
+  "skript": "%USERPROFILE%/Skripty/windchill/aktualizuj_ze_sap.py",
+  "python": "%USERPROFILE%/Skripty/windchill/.venv/Scripts/python.exe",
+  "argumenty": ["{soubor}", "{soubor_cil}", "--jen-kontrola"],
+  "pripony": [".xlsx"]
+}
+```
 
 ### Pravidla pro skripty
 

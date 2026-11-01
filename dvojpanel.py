@@ -17,7 +17,7 @@ Ovládání:
   Esc přerušit kopírování   Ctrl+R obnovit   Ctrl+Q konec
   Klik na záhlaví sloupce = řazení
 """
-__version__ = "0.4.0"
+__version__ = "0.5.0"
 
 import json
 import os
@@ -476,11 +476,15 @@ def load_tools():
     return tools, None
 
 
+EMPTY_PLACEHOLDER = {"soubor": "Pod kurzorem v aktivním panelu není soubor.",
+                     "soubor_cil": "Pod kurzorem ve druhém panelu není soubor."}
+
+
 def build_command(tool, ctx, ask):
     """Build (command, working_dir) for a tool.
 
     command is a list, or a ready command line (str) for .bat/.cmd scripts.
-    ctx: soubory (list), soubor, slozka, cil (str). ask(label) -> str or None.
+    ctx: soubory (list), soubor, soubor_cil, slozka, cil (str). ask(label) -> str or None.
     Raises ValueError for config/selection problems, ToolCancelled on cancel.
     """
     script = expand_path(tool["skript"])
@@ -504,7 +508,7 @@ def build_command(tool, ctx, ask):
             if not isinstance(value, str):
                 raise ValueError(f"Neznámý zástupný symbol {{{name}}} v nástroji „{tool['nazev']}“.")
             if not value:
-                raise ValueError(f"Pro {{{name}}} není nic vybráno.")
+                raise ValueError(EMPTY_PLACEHOLDER.get(name, f"Pro {{{name}}} není nic vybráno."))
             return value
         return PLACEHOLDER.sub(repl, text)
 
@@ -746,6 +750,11 @@ class Pane(ttk.Frame):
         t.focus(children[i])
         t.see(children[i])
         return "break"
+
+    def cursor_file(self):
+        """File under the cursor, or "" for a folder / [..] / nothing."""
+        focus = self.tree.focus()
+        return focus if focus and focus != UP and os.path.isfile(focus) else ""
 
     def selected_paths(self):
         """Marked items if there are any, otherwise the selection."""
@@ -1458,15 +1467,18 @@ class App(tk.Tk):
             return
         pane = self.active
         files = [p for p in pane.selected_paths() if os.path.isfile(p)]
-        focus = pane.tree.focus()
         ctx = {"soubory": files,
-               "soubor": focus if focus and focus != UP and os.path.isfile(focus) else "",
+               "soubor": pane.cursor_file(),
+               "soubor_cil": self.other.cursor_file(),
                "slozka": pane.path,
                "cil": self.other.path}
 
         exts = [e.lower() for e in tool.get("pripony", [])]
         if exts:
-            wrong = [os.path.basename(f) for f in files if os.path.splitext(f)[1].lower() not in exts]
+            checked = list(files)
+            if ctx["soubor_cil"] and any("{soubor_cil}" in str(a) for a in tool.get("argumenty", [])):
+                checked.append(ctx["soubor_cil"])
+            wrong = [os.path.basename(f) for f in checked if os.path.splitext(f)[1].lower() not in exts]
             if wrong:
                 messagebox.showwarning(tool["nazev"], f"Nástroj přijímá jen: {', '.join(exts)}\n\n"
                                        f"Nevyhovuje: {', '.join(wrong[:5])}")

@@ -19,6 +19,13 @@
     {
       "nazev": "Windchill: aktualizovat index",
       "skript": "%USERPROFILE%/Skripty/windchill/Aktualizovat_index.bat"
+    },
+    {
+      "nazev": "Windchill: přehled PN podle SAP (kontrola)",
+      "skript": "%USERPROFILE%/Skripty/windchill/aktualizuj_ze_sap.py",
+      "python": "%USERPROFILE%/Skripty/windchill/.venv/Scripts/python.exe",
+      "argumenty": ["{soubor}", "{soubor_cil}", "--jen-kontrola"],
+      "pripony": [".xlsx"]
     }
   ]
 }

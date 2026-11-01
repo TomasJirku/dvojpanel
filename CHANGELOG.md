@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.5.0 – 2026-11-01
+- Zástupný symbol `{soubor_cil}`: soubor pod kurzorem ve druhém panelu (dva soubory v pevném pořadí).
+- `pripony` kontroluje i `{soubor_cil}`; srozumitelnější chyba, když pod kurzorem není soubor.
+- Šablona: nástroj „Windchill: přehled PN podle SAP (kontrola)“ (`aktualizuj_ze_sap.py`).
+
 ## 0.4.0 – 2026-11-01
 - Soubor → Vytvořit zástupce v nabídce Start: zástupce s ikonou, který lze připnout na hlavní panel Windows 11.
 - Vlastní ikona programu (`dvojpanel.ico`) v okně i na hlavním panelu.
