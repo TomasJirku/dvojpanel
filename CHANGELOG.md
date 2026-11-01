@@ -8,8 +8,6 @@
 - Porovnání a synchronizace složek (Ctrl+S): binárně nebo podle velikosti a času, s podsložkami,
   volba směru u každé položky, synchronizace jen kopíruje a před přepsáním souborů je vypíše.
 - Oblíbené složky (menu Oblíbené, Ctrl+D) v lokálním `oblibene.json`; nedostupná síťová cesta nezablokuje okno.
-
-## 0.2.1 – 2026-11-01
 - Oprava: `.bat`/`.cmd` nástroj ve složce s mezerou v cestě selhal, pokud měl argument s mezerou
   (např. soubor s mezerou v názvu přes `{soubory}`).
 - Oprava: Shift+šipky nahoru/dolů rozšiřují výběr, jak uvádí README (dříve jen posouvaly kurzor).
