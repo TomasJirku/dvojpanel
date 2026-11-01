@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.5.1 – 2026-11-01
+- Šablona `nastroje.example.json`: „Windchill: dotaz“ běží přes `.venv` projektu (jinak chyběl `openpyxl`
+  a `requests`) a ukládá do nového `vystupy\zmeny_<datum_čas>.xlsx` místo přepisování jednoho souboru.
+- Šablona: místo starého `uprav_export_CR_a_DN.py` jeho nástupce `uprava_exportu_AffectedObjects.py` přes `.venv`;
+  otevírá skutečnou výstupní složku `C:\Deviation_Export\Output`.
+
 ## 0.5.0 – 2026-11-01
 - Zástupný symbol `{soubor_cil}`: soubor pod kurzorem ve druhém panelu (dva soubory v pevném pořadí).
 - `pripony` kontroluje i `{soubor_cil}`; srozumitelnější chyba, když pod kurzorem není soubor.

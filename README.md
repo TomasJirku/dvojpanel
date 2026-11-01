@@ -84,9 +84,11 @@ Nástroje se definují v `nastroje.json` vedle `dvojpanel.py`. Při prvním spu�
 {
   "nastroje": [
     {
-      "nazev": "Windchill: dotaz na číslo dílu",
+      "nazev": "Windchill: dotaz na číslo dílu → XLSX",
       "skript": "%USERPROFILE%/Skripty/windchill/dotaz.py",
-      "argumenty": ["{zadat:Číslo dílu (PN)}", "--xlsx", "{cil}/dotaz_vysledek.xlsx"]
+      "python": "%USERPROFILE%/Skripty/windchill/.venv/Scripts/python.exe",
+      "argumenty": ["{zadat:Čísla dílů (PN), více oddělit mezerou}", "--vystup", "xlsx"],
+      "zobrazit_slozku": "%USERPROFILE%/Skripty/windchill/vystupy"
     }
   ]
 }

@@ -6,15 +6,17 @@
       "argumenty": ["{soubory}"]
     },
     {
-      "nazev": "Úprava exportu CR a DN",
-      "skript": "%USERPROFILE%/Skripty/uprav_export_CR_a_DN.py",
-      "argumenty": [],
-      "zobrazit_slozku": "%USERPROFILE%/Skripty/Deviation_Export/Output"
+      "nazev": "Úprava exportu AffectedObjects (C:\\Deviation_Export)",
+      "skript": "%USERPROFILE%/Skripty/windchill/uprava_exportu_AffectedObjects.py",
+      "python": "%USERPROFILE%/Skripty/windchill/.venv/Scripts/python.exe",
+      "zobrazit_slozku": "C:/Deviation_Export/Output"
     },
     {
-      "nazev": "Windchill: dotaz na číslo dílu",
+      "nazev": "Windchill: dotaz na číslo dílu → XLSX",
       "skript": "%USERPROFILE%/Skripty/windchill/dotaz.py",
-      "argumenty": ["{zadat:Číslo dílu (PN)}", "--xlsx", "{cil}/dotaz_vysledek.xlsx"]
+      "python": "%USERPROFILE%/Skripty/windchill/.venv/Scripts/python.exe",
+      "argumenty": ["{zadat:Čísla dílů (PN), více oddělit mezerou}", "--vystup", "xlsx"],
+      "zobrazit_slozku": "%USERPROFILE%/Skripty/windchill/vystupy"
     },
     {
       "nazev": "Windchill: aktualizovat index",
