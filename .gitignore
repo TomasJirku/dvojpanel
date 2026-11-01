@@ -1,0 +1,12 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Local tool configuration (paths to work scripts) – the template is nastroje.example.json
+nastroje.json
+
+# Editors / OS
+.vscode/
+.idea/
+Thumbs.db
