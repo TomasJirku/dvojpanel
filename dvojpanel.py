@@ -17,7 +17,7 @@ Ovládání:
   Esc přerušit kopírování   Ctrl+R obnovit   Ctrl+Q konec
   Klik na záhlaví sloupce = řazení
 """
-__version__ = "0.5.2"
+__version__ = "0.5.3"
 
 import json
 import os

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.3 – 2026-11-02
+- Šablona `nastroje.example.json` a README: nástroje Windchillu ukazují na skutečnou složku projektu
+  `C:/Projects/MojeAplikace/Windchill` místo neexistující `%USERPROFILE%/Skripty/windchill`.
+
 ## 0.5.2 – 2026-11-01
 - Oprava: Enter / dvojklik spustí soubor s pracovní složkou v jeho složce, jako Průzkumník.
   `.bat`, který počítá s vlastní složkou, dřív běžel ve složce Dvojpanelu a nenašel své soubory.

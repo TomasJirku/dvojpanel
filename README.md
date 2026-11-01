@@ -85,10 +85,10 @@ Nástroje se definují v `nastroje.json` vedle `dvojpanel.py`. Při prvním spu�
   "nastroje": [
     {
       "nazev": "Windchill: dotaz na číslo dílu → XLSX",
-      "skript": "%USERPROFILE%/Skripty/windchill/dotaz.py",
-      "python": "%USERPROFILE%/Skripty/windchill/.venv/Scripts/python.exe",
+      "skript": "C:/Projects/MojeAplikace/Windchill/dotaz.py",
+      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
       "argumenty": ["{zadat:Čísla dílů (PN), více oddělit mezerou}", "--vystup", "xlsx"],
-      "zobrazit_slozku": "%USERPROFILE%/Skripty/windchill/vystupy"
+      "zobrazit_slozku": "C:/Projects/MojeAplikace/Windchill/vystupy"
     }
   ]
 }
@@ -123,8 +123,8 @@ Dva soubory ve správném pořadí (např. cílový sešit a zdrojový export) p
 ```json
 {
   "nazev": "Windchill: přehled PN podle SAP (kontrola)",
-  "skript": "%USERPROFILE%/Skripty/windchill/aktualizuj_ze_sap.py",
-  "python": "%USERPROFILE%/Skripty/windchill/.venv/Scripts/python.exe",
+  "skript": "C:/Projects/MojeAplikace/Windchill/aktualizuj_ze_sap.py",
+  "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
   "argumenty": ["{soubor}", "{soubor_cil}", "--jen-kontrola"],
   "pripony": [".xlsx"]
 }
