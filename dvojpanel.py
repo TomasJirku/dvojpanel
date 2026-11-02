@@ -10,14 +10,16 @@ Ovládání:
   Backspace        o úroveň výš
   Mezerník / Insert označit položku a posunout se dolů   Ctrl+A označit vše / zrušit
   Ctrl+klik, Shift+šipky   výběr více položek
-  F2 přejmenovat   F3 otevřít      F4 upravit v Notepadu
+  F2 přejmenovat (přímo v řádku, také pomalý druhý klik na jméno)
+  F3 otevřít       F4 upravit v Notepadu
   F5 kopírovat     F6 přesunout    F7 nová složka   F8 smazat do koše
   F9 nástroje (vlastní skripty z nastroje.json)
-  Ctrl+D oblíbené složky   Ctrl+S porovnat a synchronizovat složky
+  Přetažení myší do druhého panelu nebo na složku = kopírovat, se Shiftem přesunout
+  Ctrl+D oblíbené složky   Ctrl+S porovnat a synchronizovat složky   Ctrl+U prohodit panely
   Esc přerušit kopírování   Ctrl+R obnovit   Ctrl+Q konec
   Klik na záhlaví sloupce = řazení
 """
-__version__ = "0.5.3"
+__version__ = "0.6.0"
 
 import json
 import os
@@ -31,7 +33,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox, simpledialog, filedialog
 
 IS_WINDOWS = sys.platform == "win32"
 UP = ".."
@@ -39,12 +41,17 @@ APP_DIR = Path(__file__).resolve().parent
 CONFIG_FILE = APP_DIR / "nastroje.json"
 CONFIG_EXAMPLE = APP_DIR / "nastroje.example.json"
 FAVORITES_FILE = APP_DIR / "oblibene.json"
+SETTINGS_FILE = APP_DIR / "dvojpanel.json"
 ICON_FILE = APP_DIR / "dvojpanel.ico"
 PLACEHOLDER = re.compile(r"\{(\w+)(?::([^}]*))?\}")
 CHUNK = 1024 * 1024
 BIG_FILE = 16 * 1024 * 1024  # files from this size up report progress in percent
 MTIME_TOLERANCE = 2  # seconds; FAT and some network shares store times with 2 s precision
 MARK_COLOR = "#c8102e"
+DROP_COLOR = "#cfe3ff"
+DRAG_THRESHOLD = 6  # pixels the mouse must travel before a press becomes a drag
+RENAME_DELAY = 600  # ms; a slow second click on the name starts renaming (like Explorer)
+INVALID_NAME_CHARS = '<>:"/\\|?*' if sys.platform == "win32" else "/"
 
 
 # ---------------------------------------------------------------- helpers
@@ -77,6 +84,21 @@ def is_inside(child, parent):
         return os.path.commonpath([child, parent]) == parent
     except ValueError:  # different drives
         return False
+
+
+def rename_error(folder, old, new):
+    """Why `old` in `folder` cannot be renamed to `new`, or None. Never allows overwriting."""
+    if not new.strip() or new in (".", ".."):
+        return "Název nesmí být prázdný."
+    bad = sorted({c for c in new if c in INVALID_NAME_CHARS})
+    if bad:
+        return f"Název nesmí obsahovat znaky: {' '.join(bad)}"
+    if IS_WINDOWS and new != new.rstrip(" ."):
+        return "Název nesmí končit mezerou ani tečkou."
+    # a change of letter case only (a.txt -> A.txt) is the same file on Windows, not a collision
+    if os.path.normcase(new) != os.path.normcase(old) and os.path.lexists(os.path.join(folder, new)):
+        return f"Položka s tímto názvem už existuje:\n{new}"
+    return None
 
 
 def is_network_path(path):
@@ -428,9 +450,50 @@ def load_favorites():
 
 
 def save_favorites(favorites):
-    tmp = FAVORITES_FILE.with_name(FAVORITES_FILE.name + ".tmp")
-    tmp.write_text(json.dumps({"oblibene": favorites}, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
-    os.replace(tmp, FAVORITES_FILE)
+    write_json(FAVORITES_FILE, {"oblibene": favorites})
+
+
+def write_json(path, data):
+    tmp = path.with_name(path.name + ".tmp")
+    tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    os.replace(tmp, path)
+
+
+# ---------------------------------------------------------------- settings (dvojpanel.json)
+
+SETTINGS_DEFAULTS = {"levy_panel": "%USERPROFILE%", "pravy_panel": "%USERPROFILE%", "lista_oblibenych": True}
+
+
+def load_settings():
+    """Return (settings, error_message); missing keys and a missing file fall back to the defaults."""
+    settings = dict(SETTINGS_DEFAULTS)
+    if not SETTINGS_FILE.exists():
+        return settings, None
+    try:
+        data = json.loads(SETTINGS_FILE.read_text(encoding="utf-8-sig"))
+    except (OSError, ValueError) as e:
+        return settings, f"Chyba v dvojpanel.json: {e}"
+    if not isinstance(data, dict):
+        return settings, "dvojpanel.json musí obsahovat objekt { … }."
+    for key in ("levy_panel", "pravy_panel"):
+        if key in data and not (isinstance(data[key], str) and data[key].strip()):
+            return settings, f"dvojpanel.json: '{key}' musí být cesta ke složce."
+    if "lista_oblibenych" in data and not isinstance(data["lista_oblibenych"], bool):
+        return settings, "dvojpanel.json: 'lista_oblibenych' musí být true nebo false."
+    settings.update(data)
+    return settings, None
+
+
+def save_setting(key, value):
+    """Change one key and keep everything else the user wrote into the file."""
+    try:
+        data = json.loads(SETTINGS_FILE.read_text(encoding="utf-8-sig")) if SETTINGS_FILE.exists() else {}
+    except ValueError:
+        data = None
+    if not isinstance(data, dict):  # never overwrite a file the user has to fix by hand
+        raise OSError("dvojpanel.json obsahuje chybu, oprav ho nejdřív ručně.")
+    data[key] = value
+    write_json(SETTINGS_FILE, data)
 
 
 # ---------------------------------------------------------------- tools (user scripts)
@@ -481,11 +544,23 @@ EMPTY_PLACEHOLDER = {"soubor": "Pod kurzorem v aktivním panelu není soubor.",
                      "soubor_cil": "Pod kurzorem ve druhém panelu není soubor."}
 
 
-def build_command(tool, ctx, ask):
+FILE_PROMPTS = {"vybrat_soubor": ("open", "Vyber soubor"), "ulozit_soubor": ("save", "Uložit jako")}
+
+
+def parse_file_prompt(label, default_label, tool_exts):
+    """'Popisek|.xlsx .xls' -> ('Popisek', ['.xlsx', '.xls']); without '|' the tool's 'pripony' apply."""
+    text, sep, exts = (label or "").partition("|")
+    exts = exts.replace(",", " ").split() if sep else list(tool_exts)
+    exts = [e.lower() if e.startswith(".") else "." + e.lower() for e in exts]
+    return text.strip() or default_label, exts
+
+
+def build_command(tool, ctx, ask, pick=None):
     """Build (command, working_dir) for a tool.
 
     command is a list, or a ready command line (str) for .bat/.cmd scripts.
     ctx: soubory (list), soubor, soubor_cil, slozka, cil (str). ask(label) -> str or None.
+    pick(kind, label, exts) -> path or None shows a file dialog; kind is "open" or "save".
     Raises ValueError for config/selection problems, ToolCancelled on cancel.
     """
     script = expand_path(tool["skript"])
@@ -505,6 +580,17 @@ def build_command(tool, ctx, ask):
                         raise ToolCancelled
                     answers[label] = value
                 return answers[label]
+            if name in FILE_PROMPTS:
+                kind, default_label = FILE_PROMPTS[name]
+                key = (name, label)
+                if key not in answers:  # the same placeholder twice means the same file
+                    if pick is None:
+                        raise ValueError(f"{{{name}}} tu nelze použít.")
+                    value = pick(kind, *parse_file_prompt(label, default_label, tool.get("pripony", [])))
+                    if not value:
+                        raise ToolCancelled
+                    answers[key] = os.path.normpath(value)
+                return answers[key]
             value = ctx.get(name)
             if not isinstance(value, str):
                 raise ValueError(f"Neznámý zástupný symbol {{{name}}} v nástroji „{tool['nazev']}“.")
@@ -560,6 +646,9 @@ class Pane(ttk.Frame):
         self.sort_col, self.sort_rev = "name", False
         self.anchor = None  # start of a Shift+arrow range
         self.marked = set()  # NC-style marks (Space/Insert); take precedence over the selection
+        self.editor = None  # (entry, item, var) while a name is being edited in place
+        self.rename_job = None  # pending slow-click rename
+        self.press = None  # mouse press that may become a click, a slow click or a drag
 
         top = ttk.Frame(self)
         top.pack(fill="x", pady=(0, 2))
@@ -585,6 +674,7 @@ class Pane(ttk.Frame):
         self.tree.column("date", width=125, anchor="center", stretch=False)
         self.tree.tag_configure("dir", foreground="#0b4ea2")
         self.tree.tag_configure("marked", foreground=MARK_COLOR)  # configured later = wins over "dir"
+        self.tree.tag_configure("drop", background=DROP_COLOR)
         scroll = ttk.Scrollbar(body, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
         self.tree.pack(side="left", fill="both", expand=True)
@@ -595,7 +685,11 @@ class Pane(ttk.Frame):
 
         t = self.tree
         t.bind("<Return>", lambda e: self.activate_item())
-        t.bind("<Double-1>", lambda e: self.activate_item())
+        t.bind("<Double-1>", lambda e: (self.cancel_rename_timer(), self.activate_item()))
+        t.bind("<Button-1>", self.on_press)
+        t.bind("<B1-Motion>", self.on_motion)
+        t.bind("<ButtonRelease-1>", self.on_release)
+        t.bind("<MouseWheel>", lambda e: self.finish_rename(True, refocus=False))
         t.bind("<BackSpace>", lambda e: self.go_up())
         t.bind("<Tab>", lambda e: (self.app.switch_pane(), "break")[1])
         t.bind("<Control-a>", lambda e: (self.mark_all(), "break")[1])
@@ -631,7 +725,9 @@ class Pane(ttk.Frame):
         self.refresh_view(focus_name)
 
     def refresh_view(self, focus_name=None):
-        key = {"name": lambda i: i[0].lower(), "size": lambda i: i[2], "date": lambda i: i[3]}[self.sort_col]
+        self.finish_rename(False, refocus=False)  # the edited row is about to disappear
+        self.cancel_rename_timer()
+        key ={"name": lambda i: i[0].lower(), "size": lambda i: i[2], "date": lambda i: i[3]}[self.sort_col]
         dirs = sorted((i for i in self.items if i[1]), key=key, reverse=self.sort_rev)
         files = sorted((i for i in self.items if not i[1]), key=key, reverse=self.sort_rev)
 
@@ -771,6 +867,117 @@ class Pane(ttk.Frame):
 
     def set_marker(self, active):
         self.marker.configure(fg="#2e9e3e" if active else "#999999")
+
+    # -- rename in place
+    def start_rename(self):
+        """Put an entry over the name of the item under the cursor (F2 or a slow second click)."""
+        self.rename_job = None
+        t = self.tree
+        item = t.focus()
+        if not item or item == UP or self.editor is not None or not t.exists(item):
+            return
+        t.see(item)
+        t.update_idletasks()
+        box = t.bbox(item, "name")
+        if not box:
+            return
+        x, y, width, height = box
+        old = os.path.basename(item)
+        var = tk.StringVar(value=old)
+        entry = ttk.Entry(t, textvariable=var)
+        entry.place(x=x, y=y, width=width, height=height)
+        # like Explorer: preselect the name without the extension
+        stem = len(os.path.splitext(old)[0]) if not os.path.isdir(item) else len(old)
+        entry.selection_range(0, stem or len(old))
+        entry.icursor(stem or len(old))
+        entry.focus_set()
+        entry.bind("<Return>", lambda e: (self.finish_rename(True), "break")[1])
+        entry.bind("<KP_Enter>", lambda e: (self.finish_rename(True), "break")[1])
+        entry.bind("<Escape>", lambda e: (self.finish_rename(False), "break")[1])
+        entry.bind("<FocusOut>", lambda e: self.finish_rename(True, refocus=False))
+        self.editor = (entry, item, var)
+
+    def finish_rename(self, commit, refocus=True):
+        if self.editor is None:
+            return
+        entry, item, var = self.editor
+        self.editor = None  # first: destroying the entry or an error dialog fires FocusOut again
+        new = var.get().strip()
+        entry.destroy()
+        if refocus:
+            self.tree.focus_set()
+        if commit:
+            self.app.rename_item(self, item, new)
+
+    def cancel_rename_timer(self):
+        if self.rename_job is not None:
+            self.after_cancel(self.rename_job)
+            self.rename_job = None
+
+    # -- mouse: slow click to rename, drag & drop between panes
+    def on_press(self, event):
+        t = self.tree
+        self.cancel_rename_timer()
+        self.finish_rename(True, refocus=False)
+        self.press = None
+        if t.identify_region(event.x, event.y) not in ("cell", "tree"):
+            return None
+        item = t.identify_row(event.y)
+        if not item:
+            return None
+        plain = not event.state & 0x0005  # neither Shift nor Control
+        self.press = {"item": item, "x": event.x_root, "y": event.y_root, "dragging": False,
+                      "collapse": None,
+                      # a second click on the only selected item of the focused pane, on its name
+                      "slow_click": plain and item != UP and t.focus_get() is t and t.focus() == item
+                                    and t.selection() == (item,) and t.identify_column(event.x) == "#1"}
+        if plain and item in t.selection() and len(t.selection()) > 1:
+            # keep the multi-selection so it can be dragged; a plain click collapses it on release
+            self.press["collapse"] = item
+            t.focus(item)
+            t.focus_set()
+            return "break"
+        return None
+
+    def on_motion(self, event):
+        p = self.press
+        if p is None or p["item"] == UP:
+            return
+        if not p["dragging"]:
+            if max(abs(event.x_root - p["x"]), abs(event.y_root - p["y"])) < DRAG_THRESHOLD:
+                return
+            items = self.drag_items(p["item"])
+            if not items:
+                self.press = None
+                return
+            p["dragging"] = True
+            self.app.drag_start(self, items)
+        self.app.drag_motion(event)
+
+    def on_release(self, event):
+        p, self.press = self.press, None
+        if p is None:
+            return
+        if p["dragging"]:
+            self.app.drag_drop(event)
+        elif p["collapse"]:
+            self.tree.selection_set(p["collapse"])
+        elif p["slow_click"] and self.tree.identify_row(event.y) == p["item"]:
+            self.rename_job = self.after(RENAME_DELAY, self.start_rename)
+
+    def drag_items(self, item):
+        """What a drag starting on `item` carries: the marks if it is marked, otherwise the selection."""
+        if item in self.marked:
+            return [i for i in self.tree.get_children() if i in self.marked]
+        selection = [i for i in self.tree.selection() if i != UP]
+        return selection if item in selection else [item]
+
+    def show_drop_row(self, row):
+        """Highlight the folder row a drop would go into (None = no highlight)."""
+        for item in self.tree.tag_has("drop"):
+            self.tree.item(item, tags=[t for t in self.tree.item(item, "tags") if t != "drop"])
+        if row is not None and self.tree.exists(row):
+            self.tree.item(row, tags=list(self.tree.item(row, "tags")) + ["drop"])
 
 
 # ---------------------------------------------------------------- compare / sync window
@@ -1018,6 +1225,49 @@ class SyncWindow(tk.Toplevel):
 
 # ---------------------------------------------------------------- main window
 
+class FavoritesBar(ttk.Frame):
+    """Buttons for favorite folders; they wrap to more rows when the window is narrow."""
+
+    def __init__(self, master, app):
+        super().__init__(master)
+        self.app = app
+        self.buttons = []
+        self.rows = []
+        self.width = 0
+        self.bind("<Configure>", lambda e: self.layout(e.width) if e.width != self.width else None)
+
+    def fill(self, favorites):
+        for b in self.buttons:
+            b.destroy()
+        self.buttons = []
+        for fav in favorites:
+            b = ttk.Button(self, text="★ " + (fav.get("nazev") or fav["cesta"]), style="Toolbutton",
+                           takefocus=False, command=lambda f=fav: self.app.open_favorite(f))
+            b.bind("<Button-3>", lambda e, f=fav: self.app.favorite_context_menu(e, f))
+            self.buttons.append(b)
+        self.buttons.append(ttk.Button(self, text="+ Přidat", style="Toolbutton", takefocus=False,
+                                       command=self.app.add_favorite))
+        self.layout(self.winfo_width())
+
+    def layout(self, width):
+        if width <= 1:  # not mapped yet
+            width = max(self.app.winfo_width(), 800)
+        self.width = width
+        for row in self.rows:
+            row.destroy()
+        self.rows = []
+        used = 0
+        for b in self.buttons:
+            w = b.winfo_reqwidth()
+            if not self.rows or (used and used + w > width):
+                self.rows.append(ttk.Frame(self))
+                self.rows[-1].pack(fill="x")
+                used = 0
+            b.pack(in_=self.rows[-1], side="left")
+            b.lift()  # the row frames were created later and would cover the buttons
+            used += w
+
+
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
@@ -1037,9 +1287,15 @@ class App(tk.Tk):
         self.cancellable = False
         self.job_pane = None
         self.sync_window = None
+        self.settings, self.settings_error = load_settings()
+        self.drag = None  # {"pane", "items", "target"} while items are dragged with the mouse
+        self.last_dirs = {}  # (tool, label) -> folder last used in a {vybrat_soubor}/{ulozit_soubor} dialog
 
+        self.fav_bar = FavoritesBar(self, self)
+        self.fav_bar_var = tk.BooleanVar(value=True)
         main = ttk.PanedWindow(self, orient="vertical")
         main.pack(fill="both", expand=True, padx=4, pady=4)
+        self.main = main
         panes = ttk.PanedWindow(main, orient="horizontal")
         self.left, self.right = Pane(panes, self), Pane(panes, self)
         panes.add(self.left, weight=1)
@@ -1077,7 +1333,8 @@ class App(tk.Tk):
         self.bind("<Control-q>", lambda e: self.on_close())
         self.bind("<Control-d>", lambda e: self.show_favorites_popup())
         self.bind("<Control-s>", lambda e: self.open_sync())
-        self.bind("<Escape>", lambda e: self.cancel_job())
+        self.bind("<Control-u>", lambda e: self.swap_panes())
+        self.bind("<Escape>", lambda e: self.drag_cancel() if self.drag else self.cancel_job())
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.build_menu()
 
@@ -1086,7 +1343,50 @@ class App(tk.Tk):
         self.right.load(home)
         self.set_active(self.left)
         self.left.tree.focus_set()
+        if self.settings_error:
+            self.log(f"⚠ {self.settings_error}\n")
+        else:
+            self.open_start_folders()
         self.after(100, self.poll_jobs)
+
+    # -- settings (dvojpanel.json)
+    def open_start_folders(self):
+        """Start folders from dvojpanel.json; checked in a thread like favorites (network shares)."""
+        for pane, key in ((self.left, "levy_panel"), (self.right, "pravy_panel")):
+            path = expand_path(self.settings[key])
+            if os.path.normcase(path) != os.path.normcase(pane.path):
+                self.open_folder(pane, path, f"Výchozí složka ({key}) není dostupná")
+
+    def edit_settings(self):
+        if not SETTINGS_FILE.exists():
+            try:
+                write_json(SETTINGS_FILE, SETTINGS_DEFAULTS)
+            except OSError as e:
+                messagebox.showerror("Nastavení", f"Nelze vytvořit dvojpanel.json:\n{e}")
+                return
+        subprocess.Popen(["notepad.exe" if IS_WINDOWS else "xdg-open", str(SETTINGS_FILE)])
+
+    def save_start_folders(self):
+        if not messagebox.askyesno("Výchozí složky", "Při spuštění otevírat tyto složky?\n\n"
+                                   f"Levý panel: {self.left.path}\nPravý panel: {self.right.path}"):
+            return
+        try:
+            save_setting("levy_panel", self.left.path)
+            save_setting("pravy_panel", self.right.path)
+        except OSError as e:
+            messagebox.showerror("Nastavení", f"Nelze uložit dvojpanel.json:\n{e}")
+            return
+        self.settings.update(levy_panel=self.left.path, pravy_panel=self.right.path)
+        self.status_var.set("Výchozí složky uloženy do dvojpanel.json")
+
+    def reload_settings(self):
+        self.settings, self.settings_error = load_settings()
+        if self.settings_error:
+            messagebox.showerror("Nastavení", self.settings_error)
+            return
+        self.show_favorites_bar(self.settings["lista_oblibenych"])
+        self.open_start_folders()
+        self.status_var.set("Nastavení načteno")
 
     # -- panes
     @property
@@ -1111,6 +1411,17 @@ class App(tk.Tk):
     def reload_both(self):
         self.left.reload()
         self.right.reload()
+
+    def swap_panes(self):
+        """Ctrl+U: the left pane gets the right folder and vice versa; the active side stays."""
+        left, right = self.left, self.right
+        if os.path.normcase(left.path) == os.path.normcase(right.path):
+            return
+        focus = [os.path.basename(f) if (f := p.tree.focus()) and f != UP else None for p in (left, right)]
+        lpath, rpath = left.path, right.path
+        left.load(rpath, focus[1])
+        right.load(lpath, focus[0])
+        self.active.tree.focus_set()
 
     def is_busy(self):
         if self.busy:
@@ -1139,18 +1450,27 @@ class App(tk.Tk):
         item = pane.tree.focus()
         if not item or item == UP or self.is_busy():
             return
-        old = os.path.basename(item)
-        new = simpledialog.askstring("Přejmenovat", "Nový název:", initialvalue=old, parent=self)
-        if not new or new == old:
+        pane.start_rename()
+
+    def rename_item(self, pane, item, new):
+        """Finish an in-place rename; never overwrites an existing item."""
+        old, folder = os.path.basename(item), os.path.dirname(item)
+        if new == old or self.is_busy():
+            return
+        error = rename_error(folder, old, new)
+        if error:
+            messagebox.showerror("Přejmenovat", error)
             return
         try:
-            os.rename(item, os.path.join(pane.path, new))
+            os.rename(item, os.path.join(folder, new))
         except OSError as e:
-            messagebox.showerror("Chyba", str(e))
+            messagebox.showerror("Přejmenovat", str(e))
             return
-        pane.load(pane.path, focus_name=new)
-        if os.path.normcase(self.other.path) == os.path.normcase(pane.path):
-            self.other.reload()
+        if os.path.normcase(pane.path) == os.path.normcase(folder):
+            pane.load(pane.path, focus_name=new)
+        other = self.right if pane is self.left else self.left
+        if os.path.normcase(other.path) == os.path.normcase(folder):
+            other.reload()
 
     def make_dir(self):
         pane = self.active
@@ -1166,14 +1486,16 @@ class App(tk.Tk):
             return
         pane.load(pane.path, focus_name=name)
 
-    def transfer(self, move):
+    def transfer(self, move, sources=None, dest=None, src_pane=None):
+        """F5/F6 (selection of the active pane into the other one) or a mouse drop (explicit items)."""
         if self.is_busy():
             return
-        src_pane, dest = self.active, self.other.path
-        sources = src_pane.selected_paths()
+        if sources is None:
+            src_pane, dest = self.active, self.other.path
+            sources = src_pane.selected_paths()
         if not sources:
             return
-        if os.path.normcase(src_pane.path) == os.path.normcase(dest):
+        if any(os.path.normcase(os.path.dirname(s)) == os.path.normcase(dest) for s in sources):
             messagebox.showwarning("Stejná složka", "Zdroj a cíl jsou stejná složka.")
             return
         for s in sources:
@@ -1195,6 +1517,73 @@ class App(tk.Tk):
             overwrite = answer
         self.job_pane = src_pane
         self.run_job(transfer_worker, sources, dest, move, overwrite, self.cancel, cancellable=True)
+
+    # -- drag & drop between panes (and onto folders), only inside the program
+    def drag_start(self, pane, items):
+        self.drag = {"pane": pane, "items": items, "target": None}
+        for p in (self.left, self.right):
+            p.tree.configure(cursor="plus")
+
+    def drop_target(self, x_root, y_root):
+        """(pane, highlighted row or None, destination folder) under the pointer, or None."""
+        drag = self.drag
+        widget = self.winfo_containing(x_root, y_root)
+        if widget is None:
+            return None
+        name = str(widget)
+        for pane in (self.left, self.right):
+            if name != str(pane) and not name.startswith(str(pane) + "."):
+                continue
+            row, dest = None, pane.path  # onto a file, onto itself or below the list = the pane's folder
+            if widget is pane.tree:
+                hit = pane.tree.identify_row(y_root - pane.tree.winfo_rooty())
+                if hit == UP:
+                    row, dest = UP, os.path.dirname(pane.path)
+                elif hit and hit not in drag["items"] and os.path.isdir(hit):
+                    row, dest = hit, hit
+            if pane is drag["pane"] and row is None:
+                return None  # dropping into the folder it came from does nothing
+            return pane, row, dest
+        return None
+
+    def drag_motion(self, event):
+        if self.drag is None:
+            return
+        target = self.drop_target(event.x_root, event.y_root)
+        old = self.drag["target"]
+        if old and (not target or old[:2] != target[:2]):
+            old[0].show_drop_row(None)
+        if target and (not old or old[:2] != target[:2]):
+            target[0].show_drop_row(target[1])
+        self.drag["target"] = target
+        n = len(self.drag["items"])
+        if target:
+            verb = "Přesunout" if event.state & 0x0001 else "Kopírovat"
+            self.status_var.set(f"{verb} {n} položek do: {target[2]}   (Shift = přesunout, Esc = zrušit)")
+        else:
+            self.status_var.set(f"Přetažení {n} položek: pusť nad druhým panelem nebo nad složkou")
+        cursor = "plus" if target else "no"
+        for p in (self.left, self.right):
+            p.tree.configure(cursor=cursor)
+
+    def drag_end(self):
+        drag, self.drag = self.drag, None
+        for p in (self.left, self.right):
+            p.tree.configure(cursor="")
+            p.show_drop_row(None)
+        self.status_var.set("Připraveno")
+        return drag
+
+    def drag_cancel(self):
+        self.drag_end()
+
+    def drag_drop(self, event):
+        if self.drag is None:  # cancelled with Esc
+            return
+        target = self.drop_target(event.x_root, event.y_root)
+        drag = self.drag_end()
+        if target:
+            self.transfer(bool(event.state & 0x0001), drag["items"], target[2], drag["pane"])
 
     def delete(self):
         if self.is_busy():
@@ -1282,6 +1671,10 @@ class App(tk.Tk):
         file_menu = tk.Menu(menubar, tearoff=False)
         file_menu.add_command(label="Obnovit", accelerator="Ctrl+R", command=self.reload_both)
         file_menu.add_separator()
+        file_menu.add_command(label="Uložit aktuální složky jako výchozí…", command=self.save_start_folders)
+        file_menu.add_command(label="Upravit dvojpanel.json", command=self.edit_settings)
+        file_menu.add_command(label="Načíst nastavení znovu", command=self.reload_settings)
+        file_menu.add_separator()
         file_menu.add_command(label="Vytvořit zástupce v nabídce Start…", command=self.make_shortcut)
         file_menu.add_separator()
         file_menu.add_command(label="Konec", accelerator="Ctrl+Q", command=self.on_close)
@@ -1289,6 +1682,7 @@ class App(tk.Tk):
         cmd_menu = tk.Menu(menubar, tearoff=False)
         cmd_menu.add_command(label="Porovnat a synchronizovat složky…", accelerator="Ctrl+S",
                              command=self.open_sync)
+        cmd_menu.add_command(label="Prohodit panely", accelerator="Ctrl+U", command=self.swap_panes)
         menubar.add_cascade(label="Příkazy", menu=cmd_menu)
         self.favorites_menu = tk.Menu(menubar, tearoff=False)
         menubar.add_cascade(label="Oblíbené", menu=self.favorites_menu)
@@ -1336,10 +1730,39 @@ class App(tk.Tk):
         menu.add_cascade(label="Odebrat", menu=remove_menu, state="normal" if self.favorites else "disabled")
         menu.add_command(label="Upravit oblibene.json", command=self.edit_favorites)
         menu.add_command(label="Načíst oblíbené znovu", command=self.reload_favorites)
+        menu.add_separator()
+        menu.add_checkbutton(label="Zobrazit lištu oblíbených", variable=self.fav_bar_var,
+                             command=self.toggle_favorites_bar)
+
+    def show_favorites_bar(self, visible):
+        self.fav_bar_var.set(visible)
+        if visible and not self.fav_bar.winfo_manager():
+            self.fav_bar.pack(fill="x", padx=4, pady=(4, 0), before=self.main)
+        elif not visible:
+            self.fav_bar.pack_forget()
+
+    def toggle_favorites_bar(self):
+        visible = self.fav_bar_var.get()
+        try:
+            save_setting("lista_oblibenych", visible)
+        except OSError as e:
+            messagebox.showerror("Nastavení", f"Nelze uložit dvojpanel.json:\n{e}")
+        self.settings["lista_oblibenych"] = visible
+        self.show_favorites_bar(visible)
+
+    def favorite_context_menu(self, event, fav):
+        menu = tk.Menu(self, tearoff=False)
+        menu.add_command(label="Otevřít v aktivním panelu", command=lambda: self.open_favorite(fav))
+        menu.add_command(label="Otevřít ve druhém panelu", command=lambda: self.open_favorite(fav, self.other))
+        menu.add_separator()
+        menu.add_command(label="Odebrat z oblíbených…", command=lambda: self.remove_favorite(fav))
+        menu.tk_popup(event.x_root, event.y_root)
 
     def reload_favorites(self, startup=False):
         self.favorites, self.favorites_error = load_favorites()
         self.fill_favorites_menu(self.favorites_menu)
+        self.fav_bar.fill(self.favorites)
+        self.show_favorites_bar(self.settings["lista_oblibenych"])
         if self.favorites_error:
             self.log(f"⚠ {self.favorites_error}\n")
             if not startup:
@@ -1353,25 +1776,28 @@ class App(tk.Tk):
         tree = self.active.tree
         menu.tk_popup(tree.winfo_rootx() + 40, tree.winfo_rooty() + 40)
 
-    def open_favorite(self, fav):
+    def open_favorite(self, fav, pane=None):
+        self.open_folder(pane or self.active, expand_path(fav["cesta"]), "Složka není dostupná")
+
+    def open_folder(self, pane, path, error):
         """Check the folder in a thread first: an unreachable network share can block for many seconds."""
-        pane, path = self.active, expand_path(fav["cesta"])
         self.status_var.set(f"Otevírám {path}…")
 
         def check():
             ok = os.path.isdir(path)
-            self.jobs.put(("call", (self.favorite_checked, (pane, path, ok))))
+            self.jobs.put(("call", (self.folder_checked, (pane, path, ok, error))))
 
         threading.Thread(target=check, daemon=True).start()
 
-    def favorite_checked(self, pane, path, ok):
+    def folder_checked(self, pane, path, ok, error):
         if not ok:
             self.status_var.set("Připraveno")
-            messagebox.showerror("Oblíbené", f"Složka není dostupná:\n{path}")
+            messagebox.showerror("Dvojpanel", f"{error}:\n{path}")
             return
         pane.load(path)
         self.status_var.set("Připraveno")
-        pane.tree.focus_set()
+        if pane is self.active:
+            pane.tree.focus_set()
 
     def add_favorite(self):
         favorites, error = load_favorites()
@@ -1475,9 +1901,12 @@ class App(tk.Tk):
                "cil": self.other.path}
 
         exts = [e.lower() for e in tool.get("pripony", [])]
+        args = " ".join(str(a) for a in tool.get("argumenty", []))
         if exts:
-            checked = list(files)
-            if ctx["soubor_cil"] and any("{soubor_cil}" in str(a) for a in tool.get("argumenty", [])):
+            # the selection only matters to tools that take files from the panes, not to file dialogs
+            uses_panes = "{soubor" in args or not any(f"{{{name}" in args for name in FILE_PROMPTS)
+            checked = list(files) if uses_panes else []
+            if ctx["soubor_cil"] and "{soubor_cil}" in args:
                 checked.append(ctx["soubor_cil"])
             wrong = [os.path.basename(f) for f in checked if os.path.splitext(f)[1].lower() not in exts]
             if wrong:
@@ -1486,7 +1915,8 @@ class App(tk.Tk):
                 return
         try:
             cmd, cwd = build_command(tool, ctx, lambda label: simpledialog.askstring(
-                tool["nazev"], f"{label}:", parent=self))
+                tool["nazev"], f"{label}:", parent=self),
+                lambda kind, label, exts: self.pick_file(tool, kind, label, exts))
         except ToolCancelled:
             return
         except ValueError as e:
@@ -1513,6 +1943,29 @@ class App(tk.Tk):
             self.jobs.put(("tool_done", (tool, proc.wait())))
 
         threading.Thread(target=reader, daemon=True).start()
+
+    def pick_file(self, tool, kind, label, exts):
+        """File dialog for {vybrat_soubor} / {ulozit_soubor}; starts where this prompt was last used."""
+        key = (tool["nazev"], label)
+        folder = self.last_dirs.get(key)
+        if not folder or not os.path.isdir(folder):
+            folder = self.active.path
+        types = [(f"{label} ({' '.join(exts)})", " ".join("*" + e for e in exts))] if exts else []
+        types.append(("Všechny soubory", "*.*"))
+        options = dict(parent=self, title=f"{tool['nazev']}: {label}", initialdir=folder, filetypes=types)
+        if kind == "open":
+            path = filedialog.askopenfilename(**options)
+        else:
+            path = filedialog.asksaveasfilename(defaultextension=exts[0] if exts else "", **options)
+        if not path:
+            return None
+        path = os.path.normpath(path)
+        if exts and os.path.splitext(path)[1].lower() not in exts:
+            messagebox.showwarning(tool["nazev"], f"{label}: nástroj přijímá jen {', '.join(exts)}\n\n"
+                                   f"Nevyhovuje: {os.path.basename(path)}")
+            return None
+        self.last_dirs[key] = os.path.dirname(path)
+        return path
 
     def finish_tool(self, tool, returncode):
         self.proc = None

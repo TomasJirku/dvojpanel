@@ -8,6 +8,9 @@ nastroje.json
 # Local favorite folders (written by the program)
 oblibene.json
 oblibene.json.tmp
+# Local settings: start folders of both panes, favorites bar (written by the program)
+dvojpanel.json
+dvojpanel.json.tmp
 *.dvojpanel-tmp
 
 # Editors / OS

@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.6.0 – 2026-11-02
+- Přejmenování přímo v řádku (F2 nebo pomalý druhý klik na jméno), jméno bez přípony předvybrané,
+  Enter / klik jinam potvrdí, Esc zruší. Kontrola neplatných znaků; existující položku nepřepíše.
+- Lišta oblíbených složek nad panely (klik = aktivní panel, pravé tlačítko = druhý panel / odebrat,
+  „+ Přidat“), zalamuje se do více řádků; lze skrýt v menu Oblíbené.
+- Ctrl+U (Příkazy → Prohodit panely) prohodí složky levého a pravého panelu.
+- Přetažení myší uvnitř programu: do druhého panelu nebo na složku (i `[..]`) = kopírovat, se Shiftem
+  přesunout; stejné potvrzení a řešení kolizí jako F5/F6, Esc zruší. Vícenásobný výběr se při tahu zachová.
+- `dvojpanel.json` (lokální): výchozí složky levého a pravého panelu při spuštění a zobrazení lišty
+  oblíbených; Soubor → Uložit aktuální složky jako výchozí / Upravit / Načíst nastavení znovu.
+- Zástupné symboly `{vybrat_soubor:Popisek|.xlsx}` a `{ulozit_soubor:Popisek|.xlsx}`: soubor se vybere
+  v okně „Otevřít“ / „Uložit jako“ místo kurzorem v panelech; dialog si pamatuje poslední složku.
+- `pripony` kontrolují jen soubory, které nástroj z panelů opravdu bere.
+
 ## 0.5.3 – 2026-11-02
 - Šablona `nastroje.example.json` a README: nástroje Windchillu ukazují na skutečnou složku projektu
   `C:/Projects/MojeAplikace/Windchill` místo neexistující `%USERPROFILE%/Skripty/windchill`.

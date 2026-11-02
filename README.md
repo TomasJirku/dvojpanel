@@ -32,7 +32,7 @@ Zástupce spouští `pythonw.exe` aktuálního Pythonu, takže se běžící okn
 | Mezerník / Insert | označit / odznačit položku a posunout kurzor dolů (jako v NC) |
 | Ctrl+A | označit vše; podruhé označení zruší |
 | Ctrl+klik, Shift+šipky | výběr více položek myší / klávesnicí |
-| F2 | přejmenovat |
+| F2 | přejmenovat přímo v řádku (také pomalý druhý klik na jméno vybrané položky) |
 | F3 / F4 | otevřít / upravit v Notepadu |
 | F5 / F6 | kopírovat / přesunout do druhého panelu |
 | F7 | nová složka |
@@ -40,8 +40,15 @@ Zástupce spouští `pythonw.exe` aktuálního Pythonu, takže se běžící okn
 | F9 | nabídka nástrojů |
 | Ctrl+D | oblíbené složky |
 | Ctrl+S | porovnat a synchronizovat složky |
+| Ctrl+U | prohodit složky levého a pravého panelu |
 | Esc | přerušit probíhající kopírování / přesun |
 | Ctrl+R / Ctrl+Q | obnovit / konec |
+
+Přejmenování v řádku: předvybere se jméno bez přípony, Enter nebo klik jinam potvrdí, Esc zruší. Existující položku nikdy nepřepíše, program ohlásí chybu.
+
+### Přetažení myší
+
+Položky lze přetáhnout myší **do druhého panelu** (do jeho složky) nebo **na složku** v kterémkoli panelu, včetně `[..]`. Přetažení kopíruje, se **Shiftem** přesouvá. Platí totéž co u F5 / F6: potvrzení, dotaz při kolizích, průběh v procentech. Přetahují se označené položky, pokud tah začne na označené, jinak výběr. Esc přetažení zruší. Funguje jen uvnitř Dvojpanelu, ne z/do Průzkumníku.
 
 Označené položky (červeně) mají přednost před výběrem: F5, F6, F8 i nástroje pracují s označenými, a pokud žádné nejsou, s vybranými. Po úspěšném kopírování nebo přesunu se označení zruší, při přechodu do jiné složky také.
 
@@ -59,6 +66,8 @@ U souborů od 16 MB se při kopírování ukazuje průběh v procentech ve stavo
 
 ## Oblíbené složky
 
+Lišta nad panely ukazuje oblíbené složky jako tlačítka: klik otevře složku v aktivním panelu, pravé tlačítko nabídne otevření ve druhém panelu nebo odebrání, **+ Přidat** uloží složku aktivního panelu. Při úzkém okně se tlačítka zalomí do více řádků. Skrýt ji lze v menu **Oblíbené → Zobrazit lištu oblíbených**.
+
 Menu **Oblíbené** (nebo Ctrl+D) otevře uloženou složku v aktivním panelu. **Přidat aktuální složku** uloží složku aktivního panelu, **Odebrat** ji smaže ze seznamu. Nedostupná síťová složka nezablokuje okno, program jen ohlásí chybu.
 
 Seznam je v `oblibene.json` vedle `dvojpanel.py` (lokální, není v Gitu) a lze ho upravit i ručně (**Upravit oblibene.json**, pak **Načíst oblíbené znovu**):
@@ -73,6 +82,20 @@ Seznam je v `oblibene.json` vedle `dvojpanel.py` (lokální, není v Gitu) a lze
 ```
 
 `cesta` je povinná, `nazev` volitelný (jinak se v menu ukáže cesta). Platí stejná pravidla pro cesty jako u nástrojů.
+
+## Nastavení (dvojpanel.json)
+
+`dvojpanel.json` vedle `dvojpanel.py` (lokální, není v Gitu) určuje výchozí složky obou panelů při spuštění a zobrazení lišty oblíbených. Nejsnáz ho vytvoříš přes **Soubor → Uložit aktuální složky jako výchozí**, ručně přes **Soubor → Upravit dvojpanel.json** a pak **Načíst nastavení znovu**:
+
+```json
+{
+  "levy_panel": "C:/Projects/MojeAplikace/Windchill/vystupy",
+  "pravy_panel": "\\\\server\\projekty",
+  "lista_oblibenych": true
+}
+```
+
+Všechny klíče jsou volitelné, výchozí je domovská složka (`%USERPROFILE%`) a zobrazená lišta. Cesty jako u nástrojů. Nedostupná složka nezablokuje start, program jen ohlásí chybu a panel zůstane v domovské složce.
 
 ## Nástroje
 
@@ -99,7 +122,7 @@ Nástroje se definují v `nastroje.json` vedle `dvojpanel.py`. Při prvním spu�
 | `nazev` | ano | text v menu |
 | `skript` | ano | cesta ke skriptu (`.py`, `.bat`, `.cmd`, `.exe`); relativní cesta je vůči složce programu |
 | `argumenty` | ne | seznam argumentů, může obsahovat zástupné symboly |
-| `pripony` | ne | povolené přípony vybraných souborů (a `{soubor_cil}`, pokud ho nástroj používá), např. `[".xlsx"]` |
+| `pripony` | ne | povolené přípony souborů z panelů (`{soubory}`, `{soubor}`, `{soubor_cil}`) a filtr dialogů `{vybrat_soubor}` bez vlastních přípon, např. `[".xlsx"]` |
 | `pracovni_slozka` | ne | pracovní složka; výchozí je složka skriptu |
 | `zobrazit_slozku` | ne | po úspěšném doběhnutí se tato složka otevře v druhém panelu |
 | `python` | ne | jiný interpret, např. Python z virtuálního prostředí |
@@ -117,6 +140,8 @@ Cesty mohou používat `/` i `\` (v JSONu se zpětné lomítko musí zdvojit) a 
 | `{cil}` | složkou druhého panelu |
 | `{skript_slozka}` | složkou skriptu |
 | `{zadat:Popisek}` | hodnotou, na kterou se program zeptá v dialogu |
+| `{vybrat_soubor:Popisek\|.xlsx}` | souborem vybraným v okně „Otevřít“ (popisek v titulku, za `\|` povolené přípony) |
+| `{ulozit_soubor:Popisek\|.xlsx}` | cestou z okna „Uložit jako“ (přípona se doplní, na přepsání se zeptá Windows) |
 
 Dva soubory ve správném pořadí (např. cílový sešit a zdrojový export) předáš tak, že jeden máš pod kurzorem v aktivním panelu a druhý ve druhém panelu:
 
@@ -127,6 +152,17 @@ Dva soubory ve správném pořadí (např. cílový sešit a zdrojový export) p
   "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
   "argumenty": ["{soubor}", "{soubor_cil}", "--jen-kontrola"],
   "pripony": [".xlsx"]
+}
+```
+
+Spolehlivější je výběr dialogem: popisek přesně řekne, který soubor se čeká, a nezáleží na kurzoru. Dialog začne ve složce aktivního panelu, příště tam, kde byl tento soubor vybrán naposledy (do zavření programu). Stejný symbol se stejným popiskem použitý dvakrát se ptá jen jednou.
+
+```json
+{
+  "nazev": "Windchill: přehled PN podle SAP (kontrola, výběr souborů)",
+  "skript": "C:/Projects/MojeAplikace/Windchill/aktualizuj_ze_sap.py",
+  "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
+  "argumenty": ["{vybrat_soubor:Cílový přehled PN|.xlsx}", "{vybrat_soubor:Export ze SAP|.xlsx}", "--jen-kontrola"]
 }
 ```
 

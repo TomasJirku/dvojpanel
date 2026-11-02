@@ -28,6 +28,18 @@
       "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
       "argumenty": ["{soubor}", "{soubor_cil}", "--jen-kontrola"],
       "pripony": [".xlsx"]
+    },
+    {
+      "nazev": "Windchill: přehled PN podle SAP (kontrola, výběr souborů)",
+      "skript": "C:/Projects/MojeAplikace/Windchill/aktualizuj_ze_sap.py",
+      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
+      "argumenty": ["{vybrat_soubor:Cílový přehled PN|.xlsx}", "{vybrat_soubor:Export ze SAP|.xlsx}", "--jen-kontrola"]
+    },
+    {
+      "nazev": "Windchill: doplnit CR a DN do přehledu PN",
+      "skript": "C:/Projects/MojeAplikace/Windchill/dopln_cr.py",
+      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
+      "argumenty": ["{vybrat_soubor:Přehled PN|.xlsx}"]
     }
   ]
 }
