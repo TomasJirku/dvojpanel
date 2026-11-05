@@ -19,7 +19,7 @@ Ovládání:
   Esc přerušit kopírování   Ctrl+R obnovit   Ctrl+Q konec
   Klik na záhlaví sloupce = řazení
 """
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 import json
 import os
@@ -502,12 +502,17 @@ class ToolCancelled(Exception):
     """User cancelled an input prompt."""
 
 
-def expand_path(path):
-    """Expand %VARS% and ~, resolve relative paths against the app folder."""
+def expand_path(path, base=None):
+    """Expand %VARS% and ~, resolve relative paths against base (default: the app folder)."""
     path = os.path.expandvars(os.path.expanduser(str(path)))
     if not os.path.isabs(path):
-        path = os.path.join(APP_DIR, path)
+        path = os.path.join(base or APP_DIR, path)
     return os.path.normpath(path)
+
+
+def tool_path(tool, path):
+    """A path from a tool definition; relative paths are relative to the file the tool came from."""
+    return expand_path(path, tool.get("_zaklad"))
 
 
 def python_executable():
@@ -533,16 +538,63 @@ def load_tools():
         data = json.loads(CONFIG_FILE.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as e:
         return [], f"Chyba v nastroje.json: {e}"
+    try:
+        tools = parse_tools(data, "nastroje.json", APP_DIR)
+    except ValueError as e:
+        return [], str(e)
+
+    # "vlozit": tool files maintained by the projects themselves (e.g. Windchill), updated by git pull;
+    # a broken or missing one is reported, the other tools still load
+    includes = data.get("vlozit", []) if isinstance(data, dict) else []
+    if isinstance(includes, str):
+        includes = [includes]
+    errors = []
+    for include in includes:
+        path = expand_path(include)
+        try:
+            inc = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+            if isinstance(inc, dict) and "vlozit" in inc:
+                raise ValueError("vložený soubor nesmí dál vkládat ('vlozit')")
+            tools += parse_tools(inc, os.path.basename(path), os.path.dirname(path))
+        except FileNotFoundError:
+            errors.append(f"Vložený soubor nástrojů neexistuje:\n{path}")
+        except (OSError, ValueError) as e:
+            errors.append(f"Chyba ve vloženém souboru nástrojů {path}:\n{e}")
+    return tools, "\n\n".join(errors) or None
+
+
+def parse_tools(data, source, base):
+    """Validated tools of one config file. Each remembers its folder (_zaklad) for relative paths;
+    a file-level "skupina" is the default group of its tools."""
     tools = data.get("nastroje", []) if isinstance(data, dict) else []
+    if not isinstance(tools, list):
+        raise ValueError(f"{source}: 'nastroje' musí být seznam.")
+    group = data.get("skupina") if isinstance(data, dict) else None
+    result = []
     for i, tool in enumerate(tools, 1):
         if not isinstance(tool, dict) or not tool.get("nazev") or not tool.get("skript"):
-            return [], f"nastroje.json: nástroj č. {i} musí mít 'nazev' a 'skript'."
-    return tools, None
+            raise ValueError(f"{source}: nástroj č. {i} musí mít 'nazev' a 'skript'.")
+        tool = dict(tool, _zaklad=str(base))
+        if group and not tool.get("skupina"):
+            tool["skupina"] = group
+        result.append(tool)
+    return result
+
+
+def preview_args(tool):
+    """The "nahled" arguments (string or list) added for the dry run before the real one."""
+    value = tool.get("nahled")
+    if not value:
+        return []
+    return [value] if isinstance(value, str) else [str(v) for v in value]
 
 
 EMPTY_PLACEHOLDER = {"soubor": "Pod kurzorem v aktivním panelu není soubor.",
                      "soubor_cil": "Pod kurzorem ve druhém panelu není soubor."}
 
+
+PROTOCOL_PREFIX = "DVOJPANEL:"  # output lines a tool addresses to Dvojpanel (not shown in the log)
+PREVIEW_OK = (0, 2)  # preview exit codes that still allow the real run (2 = needs attention)
 
 FILE_PROMPTS = {"vybrat_soubor": ("open", "Vyber soubor"), "ulozit_soubor": ("save", "Uložit jako")}
 
@@ -555,19 +607,22 @@ def parse_file_prompt(label, default_label, tool_exts):
     return text.strip() or default_label, exts
 
 
-def build_command(tool, ctx, ask, pick=None):
+def build_command(tool, ctx, ask, pick=None, answers=None, extra=()):
     """Build (command, working_dir) for a tool.
 
     command is a list, or a ready command line (str) for .bat/.cmd scripts.
     ctx: soubory (list), soubor, soubor_cil, slozka, cil (str). ask(label) -> str or None.
     pick(kind, label, exts) -> path or None shows a file dialog; kind is "open" or "save".
+    answers: shared dict, so a second build (the real run after a preview) asks nothing again.
+    extra: arguments appended after "argumenty" (the "nahled" flags).
     Raises ValueError for config/selection problems, ToolCancelled on cancel.
     """
-    script = expand_path(tool["skript"])
+    script = tool_path(tool, tool["skript"])
     if not os.path.isfile(script):
         raise ValueError(f"Skript neexistuje:\n{script}")
     ctx = dict(ctx, skript_slozka=os.path.dirname(script))
-    answers = {}
+    if answers is None:
+        answers = {}
 
     def substitute(text):
         def repl(m):
@@ -605,14 +660,14 @@ def build_command(tool, ctx, ask, pick=None):
         if not interp:
             interp = python_executable()
         elif "/" in interp or "\\" in interp:
-            interp = expand_path(interp)
+            interp = tool_path(tool, interp)
         cmd = [interp, script]
     elif suffix in (".bat", ".cmd"):
         cmd = [script]  # wrapped for cmd.exe below, once arguments are added
     else:
         cmd = [script]
 
-    for arg in tool.get("argumenty", []):
+    for arg in list(tool.get("argumenty", [])) + list(extra):
         if arg == "{soubory}":
             if not ctx["soubory"]:
                 raise ValueError("Nástroj potřebuje vybrané soubory, ale žádný není vybrán.")
@@ -626,7 +681,7 @@ def build_command(tool, ctx, ask, pick=None):
         cmd = f'cmd /s /c "{subprocess.list2cmdline(cmd)}"'
 
     if tool.get("pracovni_slozka"):
-        cwd = expand_path(substitute(tool["pracovni_slozka"]))
+        cwd = tool_path(tool, substitute(tool["pracovni_slozka"]))
     else:
         cwd = os.path.dirname(script)
     return cmd, cwd
@@ -1854,9 +1909,19 @@ class App(tk.Tk):
 
     def fill_tools_menu(self, menu):
         menu.delete(0, "end")
+        if self.tools and self.tools_error:  # e.g. a missing included file; the rest still works
+            menu.add_command(label="⚠ " + self.tools_error.splitlines()[0], state="disabled")
         if self.tools:
+            groups = {}
             for tool in self.tools:
-                menu.add_command(label=tool["nazev"], command=lambda t=tool: self.run_tool(t))
+                target = menu
+                group = tool.get("skupina")
+                if group:
+                    if group not in groups:  # a submenu where its first tool is
+                        groups[group] = tk.Menu(menu, tearoff=False)
+                        menu.add_cascade(label=group, menu=groups[group])
+                    target = groups[group]
+                target.add_command(label=tool["nazev"], command=lambda t=tool: self.run_tool(t))
         else:
             menu.add_command(label=self.tools_error or "Žádné nástroje", state="disabled")
         menu.add_separator()
@@ -1913,18 +1978,33 @@ class App(tk.Tk):
                 messagebox.showwarning(tool["nazev"], f"Nástroj přijímá jen: {', '.join(exts)}\n\n"
                                        f"Nevyhovuje: {', '.join(wrong[:5])}")
                 return
+        def ask(label):
+            return simpledialog.askstring(tool["nazev"], f"{label}:", parent=self)
+
+        def pick(kind, label, exts):
+            return self.pick_file(tool, kind, label, exts)
+
+        answers = {}  # shared: the real run after a preview asks nothing again
         try:
-            cmd, cwd = build_command(tool, ctx, lambda label: simpledialog.askstring(
-                tool["nazev"], f"{label}:", parent=self),
-                lambda kind, label, exts: self.pick_file(tool, kind, label, exts))
+            cmd, cwd = build_command(tool, ctx, ask, pick, answers)
+            preview = None
+            if preview_args(tool):
+                preview, _ = build_command(tool, ctx, ask, pick, answers, extra=preview_args(tool))
         except ToolCancelled:
             return
         except ValueError as e:
             messagebox.showerror(tool["nazev"], str(e))
             return
+        if preview is not None:
+            self.start_tool(tool, preview, cwd, real=(cmd, cwd))
+        else:
+            self.start_tool(tool, cmd, cwd)
 
+    def start_tool(self, tool, cmd, cwd, real=None):
+        """Run a tool; real=(cmd, cwd) makes this the preview whose result asks before the real run."""
         line = cmd if isinstance(cmd, str) else subprocess.list2cmdline(cmd)
-        self.log(f"\n▶ {tool['nazev']}\n  {line}\n  (složka: {cwd})\n")
+        title = f"{tool['nazev']} – náhled" if real else tool["nazev"]
+        self.log(f"\n▶ {title}\n  {line}\n  (složka: {cwd})\n")
         env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", DVOJPANEL=__version__)
         try:
             proc = subprocess.Popen(
@@ -1935,12 +2015,16 @@ class App(tk.Tk):
             self.log(f"  Nelze spustit: {e}\n")
             return
         self.proc = proc
-        self.status_var.set(f"Běží: {tool['nazev']}")
+        self.status_var.set(f"Běží: {title}")
 
         def reader():
+            no_change = False
             for line in proc.stdout:
+                if line.startswith(PROTOCOL_PREFIX):  # messages for Dvojpanel, not for the log
+                    no_change = no_change or line.strip() == PROTOCOL_PREFIX + "BEZ_ZMEN"
+                    continue
                 self.jobs.put(("log", line))
-            self.jobs.put(("tool_done", (tool, proc.wait())))
+            self.jobs.put(("tool_done", (tool, proc.wait(), real, no_change)))
 
         threading.Thread(target=reader, daemon=True).start()
 
@@ -1967,8 +2051,11 @@ class App(tk.Tk):
         self.last_dirs[key] = os.path.dirname(path)
         return path
 
-    def finish_tool(self, tool, returncode):
+    def finish_tool(self, tool, returncode, real=None, no_change=False):
         self.proc = None
+        if real is not None:
+            self.finish_preview(tool, returncode, real, no_change)
+            return
         if returncode == 0:
             self.log("■ Hotovo\n")
             self.status_var.set(f"{tool['nazev']}: hotovo")
@@ -1977,9 +2064,27 @@ class App(tk.Tk):
             self.status_var.set(f"{tool['nazev']}: chyba {returncode}")
         self.reload_both()
         if returncode == 0 and tool.get("zobrazit_slozku"):
-            folder = expand_path(tool["zobrazit_slozku"])
+            folder = tool_path(tool, tool["zobrazit_slozku"])
             if os.path.isdir(folder):
                 self.other.load(folder)
+
+    def finish_preview(self, tool, returncode, real, no_change):
+        self.reload_both()
+        if returncode not in PREVIEW_OK:
+            self.log(f"■ Náhled skončil s chybou (návratový kód {returncode}), nic se nezapisuje.\n")
+            self.status_var.set(f"{tool['nazev']}: chyba {returncode}")
+            return
+        if no_change:
+            self.log("■ Náhled: beze změn, není co zapsat.\n")
+            self.status_var.set(f"{tool['nazev']}: beze změn")
+            return
+        self.log(f"■ Náhled hotov (návratový kód {returncode})\n")
+        self.status_var.set(f"{tool['nazev']}: čeká na potvrzení")
+        if messagebox.askyesno(tool["nazev"], "Náhled změn je v dolním panelu.\n\nProvést změny naostro?"):
+            self.start_tool(tool, *real)
+        else:
+            self.log("  Zrušeno, nic se nezapsalo.\n")
+            self.status_var.set(f"{tool['nazev']}: zrušeno")
 
     def stop_tool(self):
         if self.proc is not None:

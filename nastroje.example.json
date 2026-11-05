@@ -1,45 +1,12 @@
 {
+  "vlozit": [
+    "C:/Projects/MojeAplikace/Windchill/dvojpanel_nastroje.json"
+  ],
   "nastroje": [
     {
       "nazev": "Ukázka: vypsat vybrané soubory",
       "skript": "nastroje/ukazka.py",
       "argumenty": ["{soubory}"]
-    },
-    {
-      "nazev": "Úprava exportu AffectedObjects (C:\\Deviation_Export)",
-      "skript": "C:/Projects/MojeAplikace/Windchill/uprava_exportu_AffectedObjects.py",
-      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
-      "zobrazit_slozku": "C:/Deviation_Export/Output"
-    },
-    {
-      "nazev": "Windchill: dotaz na číslo dílu → XLSX",
-      "skript": "C:/Projects/MojeAplikace/Windchill/dotaz.py",
-      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
-      "argumenty": ["{zadat:Čísla dílů (PN), více oddělit mezerou}", "--vystup", "xlsx"],
-      "zobrazit_slozku": "C:/Projects/MojeAplikace/Windchill/vystupy"
-    },
-    {
-      "nazev": "Windchill: aktualizovat index",
-      "skript": "C:/Projects/MojeAplikace/Windchill/Aktualizovat_index.bat"
-    },
-    {
-      "nazev": "Windchill: přehled PN podle SAP (kontrola)",
-      "skript": "C:/Projects/MojeAplikace/Windchill/aktualizuj_ze_sap.py",
-      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
-      "argumenty": ["{soubor}", "{soubor_cil}", "--jen-kontrola"],
-      "pripony": [".xlsx"]
-    },
-    {
-      "nazev": "Windchill: přehled PN podle SAP (kontrola, výběr souborů)",
-      "skript": "C:/Projects/MojeAplikace/Windchill/aktualizuj_ze_sap.py",
-      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
-      "argumenty": ["{vybrat_soubor:Cílový přehled PN|.xlsx}", "{vybrat_soubor:Export ze SAP|.xlsx}", "--jen-kontrola"]
-    },
-    {
-      "nazev": "Windchill: doplnit CR a DN do přehledu PN",
-      "skript": "C:/Projects/MojeAplikace/Windchill/dopln_cr.py",
-      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
-      "argumenty": ["{vybrat_soubor:Přehled PN|.xlsx}"]
     }
   ]
 }

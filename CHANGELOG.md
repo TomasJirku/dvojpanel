@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.7.0 – 2026-11-02
+- `nastroje.json`: `"vlozit"` načte soubory nástrojů, které si udržují projekty samy (Windchill:
+  `dvojpanel_nastroje.json`). Relativní cesty jsou vůči vloženému souboru, chybějící soubor se ohlásí
+  a ostatní nástroje fungují dál. Šablona vkládá nástroje Windchillu místo jejich výpisu.
+- `"skupina"`: podmenu v menu Nástroje / F9 (i jako výchozí pro celý vložený soubor).
+- `"nahled"`: nástroj nejdřív běží s argumentem pro kontrolu (např. `--jen-kontrola`), naostro až po
+  potvrzení; dotazy a dialogy se podruhé neopakují. Chyba v náhledu nebo `DVOJPANEL:BEZ_ZMEN` = žádný dotaz.
+- Řádky výstupu `DVOJPANEL:…` jsou zprávy pro program a v dolním panelu se nezobrazují.
+- Automatické testy jsou v repozitáři: `python tests\spustit_testy.py`.
+
 ## 0.6.0 – 2026-11-02
 - Přejmenování přímo v řádku (F2 nebo pomalý druhý klik na jméno), jméno bez přípony předvybrané,
   Enter / klik jinam potvrdí, Esc zruší. Kontrola neplatných znaků; existující položku nepřepíše.

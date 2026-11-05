@@ -16,5 +16,8 @@ Jeden soubor `dvojpanel.py`, verze v `__version__`.
 - Dlouhé operace ve vlákně, komunikace s GUI jen přes `self.jobs` (queue) a `poll_jobs`.
 
 ## Testování
-GUI nelze testovat bez displeje. Logiku (`transfer_worker`, `build_command`, `load_tools`, `is_inside`) lze testovat
-s podvrženým modulem `tkinter` v `sys.modules`. Finální ověření ručně na Windows na testovací složce.
+`python tests\spustit_testy.py` (Windows s displejem, ~5 min): zkopíruje program do dočasné složky a spustí
+`tests\harness.py` nad skutečným oknem Tk (události kláves a myši, podvržené `messagebox`/`simpledialog`/`filedialog`
+a `os.startfile`). Části podle verzí jsou `tests\vXXX.py`, harness je spouští přes `exec` (sdílí jeho globály).
+Každá nová funkce = nová kontrola v `tests\` a celá sada musí projít (rc 0). Projekt Windchill (`DP_WINDCHILL`)
+testy jen čtou; šablona se přesměruje do testovací složky. Myš a vzhled nakonec ověřit ručně.

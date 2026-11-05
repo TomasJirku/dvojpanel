@@ -103,29 +103,48 @@ Nástroje se definují v `nastroje.json` vedle `dvojpanel.py`. Při prvním spu�
 
 `nastroje.json` obsahuje lokální cesty, proto není v Gitu. Šablona ano.
 
+### Nástroje dodané projektem (`vlozit`)
+
+Projekt se skripty si může nástroje pro Dvojpanel udržovat sám ve vlastním souboru v Gitu, např. Windchill v `dvojpanel_nastroje.json`. `nastroje.json` ho jen vloží; po `git pull` v projektu stačí **Načíst nástroje znovu** a nové nástroje jsou v menu, nic se nekopíruje ani nepřepisuje:
+
 ```json
 {
+  "vlozit": ["C:/Projects/MojeAplikace/Windchill/dvojpanel_nastroje.json"],
   "nastroje": [
-    {
-      "nazev": "Windchill: dotaz na číslo dílu → XLSX",
-      "skript": "C:/Projects/MojeAplikace/Windchill/dotaz.py",
-      "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
-      "argumenty": ["{zadat:Čísla dílů (PN), více oddělit mezerou}", "--vystup", "xlsx"],
-      "zobrazit_slozku": "C:/Projects/MojeAplikace/Windchill/vystupy"
-    }
+    {"nazev": "Můj vlastní skript", "skript": "%USERPROFILE%/skripty/muj.py"}
   ]
+}
+```
+
+- Vložený soubor má stejný tvar (`"nastroje": [...]`). **Relativní cesty v něm (`skript`, `python`, `pracovni_slozka`, `zobrazit_slozku`) jsou vůči jeho složce**, takže funguje v každé kopii projektu.
+- `"skupina"` na úrovni souboru je výchozí podmenu pro jeho nástroje, každý nástroj může mít vlastní.
+- Chybějící nebo chybný vložený soubor program ohlásí (v menu nahoře a ve výstupu), ostatní nástroje fungují dál. Vložený soubor nesmí dál vkládat.
+- Vlastní nástroje v `nastroje.json` jsou v menu první, vložené za nimi.
+
+Jeden nástroj:
+
+```json
+{
+  "nazev": "Dotaz na čísla dílů → XLSX",
+  "skupina": "Windchill – index a dotazy",
+  "skript": "dotaz.py",
+  "python": ".venv/Scripts/python.exe",
+  "argumenty": ["{zadat:Čísla dílů (PN), více oddělit mezerou}", "--vystup", "xlsx"],
+  "zobrazit_slozku": "vystupy"
 }
 ```
 
 | Klíč | Povinný | Význam |
 |---|---|---|
 | `nazev` | ano | text v menu |
-| `skript` | ano | cesta ke skriptu (`.py`, `.bat`, `.cmd`, `.exe`); relativní cesta je vůči složce programu |
+| `skript` | ano | cesta ke skriptu (`.py`, `.bat`, `.cmd`, `.exe`); relativní cesta je vůči složce programu (ve vloženém souboru vůči jeho složce) |
 | `argumenty` | ne | seznam argumentů, může obsahovat zástupné symboly |
 | `pripony` | ne | povolené přípony souborů z panelů (`{soubory}`, `{soubor}`, `{soubor_cil}`) a filtr dialogů `{vybrat_soubor}` bez vlastních přípon, např. `[".xlsx"]` |
 | `pracovni_slozka` | ne | pracovní složka; výchozí je složka skriptu |
 | `zobrazit_slozku` | ne | po úspěšném doběhnutí se tato složka otevře v druhém panelu |
 | `python` | ne | jiný interpret, např. Python z virtuálního prostředí |
+| `skupina` | ne | podmenu v menu Nástroje / F9 |
+| `nahled` | ne | argument(y) pro zkušební běh, např. `"--jen-kontrola"`: viz Náhled a potvrzení |
 
 Cesty mohou používat `/` i `\` (v JSONu se zpětné lomítko musí zdvojit) a proměnné jako `%USERPROFILE%`.
 
@@ -147,10 +166,10 @@ Dva soubory ve správném pořadí (např. cílový sešit a zdrojový export) p
 
 ```json
 {
-  "nazev": "Windchill: přehled PN podle SAP (kontrola)",
-  "skript": "C:/Projects/MojeAplikace/Windchill/aktualizuj_ze_sap.py",
-  "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
-  "argumenty": ["{soubor}", "{soubor_cil}", "--jen-kontrola"],
+  "nazev": "Aktualizovat podle SAP (přehled pod kurzorem, export ve druhém panelu)",
+  "skript": "aktualizuj_ze_sap.py",
+  "python": ".venv/Scripts/python.exe",
+  "argumenty": ["{soubor}", "{soubor_cil}"],
   "pripony": [".xlsx"]
 }
 ```
@@ -159,12 +178,23 @@ Spolehlivější je výběr dialogem: popisek přesně řekne, který soubor se 
 
 ```json
 {
-  "nazev": "Windchill: přehled PN podle SAP (kontrola, výběr souborů)",
-  "skript": "C:/Projects/MojeAplikace/Windchill/aktualizuj_ze_sap.py",
-  "python": "C:/Projects/MojeAplikace/Windchill/.venv/Scripts/python.exe",
-  "argumenty": ["{vybrat_soubor:Cílový přehled PN|.xlsx}", "{vybrat_soubor:Export ze SAP|.xlsx}", "--jen-kontrola"]
+  "nazev": "Aktualizovat podle SAP (výběr souborů)",
+  "skript": "aktualizuj_ze_sap.py",
+  "python": ".venv/Scripts/python.exe",
+  "argumenty": ["{vybrat_soubor:Cílový přehled PN|.xlsx}", "{vybrat_soubor:Export ze SAP|.xlsx}"],
+  "nahled": "--jen-kontrola"
 }
 ```
+
+### Náhled a potvrzení (`nahled`)
+
+Nástroj, který něco zapisuje, nemusí mít dvě verze „kontrola“ a „aktualizovat“. S `"nahled": "--jen-kontrola"` (nebo seznamem argumentů):
+
+1. Program spustí skript s argumenty a navíc `--jen-kontrola`. Výstup je v dolním panelu.
+2. Doběhne-li náhled s kódem 0 nebo 2 (2 = něco vyžaduje pozornost), zeptá se **Provést změny naostro?**
+3. Po potvrzení spustí skript znovu bez `--jen-kontrola`. Na nic se znovu neptá (`{zadat}`, dialogy souborů platí z náhledu).
+
+Náhled s jiným kódem (chyba) nic nezapíše a na nic se neptá. Když skript v náhledu vypíše řádek `DVOJPANEL:BEZ_ZMEN`, program oznámí „beze změn“ a také se neptá. `zobrazit_slozku` se otevře až po ostrém běhu.
 
 ### Pravidla pro skripty
 
@@ -172,7 +202,16 @@ Spolehlivější je výběr dialogem: popisek přesně řekne, který soubor se 
 - Skript nesmí čekat na `input()`. Vstup je zavřený, takže `input()` skončí chybou místo zamrznutí. Hodnoty předávej argumenty nebo přes `{zadat:...}`.
 - Návratový kód 0 znamená úspěch, cokoli jiného chybu.
 - Běží vždy jen jeden nástroj; zastavit ho lze v menu Nástroje.
+- Řádky začínající `DVOJPANEL:` jsou zprávy pro program a ve výstupu se nezobrazují (zatím `DVOJPANEL:BEZ_ZMEN`, viz Náhled a potvrzení).
 - Nástroj dostane proměnnou prostředí `DVOJPANEL` (verze programu), podle které pozná, že běží z Dvojpanelu. Např. `.bat`, který po dvojkliku čeká (`pause`/`timeout`), může čekání přeskočit: `if defined DVOJPANEL exit /b 0`. Jinak `timeout` vypíše „Input redirection is not supported“ (vstup je zavřený) a skončí, výsledek nástroje to neovlivní.
+
+## Testy
+
+```
+python tests\spustit_testy.py
+```
+
+Automatický test celého programu přes skutečné okno (klávesy, myš, dialogy podvržené), asi 5 minut. Program se zkopíruje do dočasné složky, takže lokální `nastroje.json`, `oblibene.json` ani `dvojpanel.json` se nezmění. Projekt Windchill (`C:\Projects\MojeAplikace\Windchill`, jinde proměnná `DP_WINDCHILL`) se jen čte. Návratový kód 0 = vše prošlo. Potřebuje Windows s displejem.
 
 ## Licence
 
