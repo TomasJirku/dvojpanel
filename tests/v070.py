@@ -165,7 +165,7 @@ def v070_preview():
 
     # the real Windchill script through the template: matching files -> "beze změn", no question
     wc = os.path.join(HOME, "Skripty", "windchill")
-    wc_py = os.path.join(WC_SRC, ".venv", "Scripts", "python.exe")
+    wc_py = os.path.join(WC_VENV, "Scripts", "python.exe")
     same = os.path.join(ENV, "sap_shoda")
     os.makedirs(same)
     target, sapx = os.path.join(same, "PNs_Overview.xlsx"), os.path.join(same, "SAP.xlsx")

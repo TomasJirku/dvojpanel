@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.8.0 – 2026-11-06
+- Sloupec **Typ** v panelech: druh souboru, jak ho pojmenují Windows (např. „List Microsoft Excelu“), složky
+  „Složka“; lze podle něj řadit.
+- Záhlaví sloupce, podle kterého se řadí, ukazuje směr: `▲` vzestupně, `▼` sestupně.
+- Kopírování / přesun do cíle, kde položky už existují: program upozorní na soubory, které jsou v cíli
+  **novější** (s datem obou), a nabídne Přepsat jen starší (výchozí) / Přepsat vše / Přeskočit existující /
+  Storno. „Jen starší“ platí i uvnitř slučovaných složek; při přesunu nepřepsané soubory zůstanou ve zdroji.
+- Nástroj, který se sám ptá (Python `input()`, `set /p`, `pause` – typicky skript spuštěný bez parametrů, který
+  chce PN nebo CR), dostane okno pro zadání s tím, co nástroj vypsal; dřív skončil chybou EOFError.
+- Nápověda (F1, menu Nápověda): ovládání, kopírování, nástroje; téma **Moje nástroje** popisuje každý načtený
+  nástroj (na co se ptá, s čím pracuje, náhled, výstupní složka). Nový nepovinný klíč nástroje `popis`.
+- Nástroje → **Přidat nástroje projektu…**: soubor `dvojpanel_nastroje.json` se vybere dialogem a program ho
+  sám zapíše do `"vlozit"` v `nastroje.json`. Chybějící vložený soubor ohlásí i tuto opravu.
+- Testy: projekt Windchill může mít git checkout v podsložce `windchill-index` a `.venv` o úroveň výš.
+
 ## 0.7.0 – 2026-11-02
 - `nastroje.json`: `"vlozit"` načte soubory nástrojů, které si udržují projekty samy (Windchill:
   `dvojpanel_nastroje.json`). Relativní cesty jsou vůči vloženému souboru, chybějící soubor se ohlásí

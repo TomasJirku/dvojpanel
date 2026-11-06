@@ -5,6 +5,7 @@
   "nastroje": [
     {
       "nazev": "Ukázka: vypsat vybrané soubory",
+      "popis": "Vypíše jména a velikosti označených souborů z aktivního panelu. Nic nemění.",
       "skript": "nastroje/ukazka.py",
       "argumenty": ["{soubory}"]
     }

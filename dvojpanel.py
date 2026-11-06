@@ -17,10 +17,12 @@ Ovládání:
   Přetažení myší do druhého panelu nebo na složku = kopírovat, se Shiftem přesunout
   Ctrl+D oblíbené složky   Ctrl+S porovnat a synchronizovat složky   Ctrl+U prohodit panely
   Esc přerušit kopírování   Ctrl+R obnovit   Ctrl+Q konec
-  Klik na záhlaví sloupce = řazení
+  Klik na záhlaví sloupce = řazení (▲ / ▼ ukazuje sloupec a směr)
+  F1 nápověda (také vysvětlení všech nástrojů)
 """
-__version__ = "0.7.0"
+__version__ = "0.8.0"
 
+import codecs
 import json
 import os
 import re
@@ -30,6 +32,7 @@ import string
 import queue
 import threading
 import subprocess
+import time
 from datetime import datetime
 from pathlib import Path
 import tkinter as tk
@@ -68,6 +71,41 @@ def fmt_time(ts):
         return datetime.fromtimestamp(ts).strftime("%d.%m.%Y %H:%M")
     except (OSError, ValueError, OverflowError):
         return ""
+
+
+_TYPE_NAMES = {}  # extension -> type name, the shell is asked once per extension
+
+
+def shell_type_name(ext):
+    """Windows' own name of a file type ("Dokument aplikace Microsoft Word"), or "" when unknown."""
+    if not IS_WINDOWS or not ext:
+        return ""
+    try:
+        import ctypes
+        from ctypes import wintypes
+
+        class SHFILEINFOW(ctypes.Structure):
+            _fields_ = [("hIcon", wintypes.HANDLE), ("iIcon", ctypes.c_int), ("dwAttributes", wintypes.DWORD),
+                        ("szDisplayName", ctypes.c_wchar * 260), ("szTypeName", ctypes.c_wchar * 80)]
+
+        SHGFI_TYPENAME, SHGFI_USEFILEATTRIBUTES, FILE_ATTRIBUTE_NORMAL = 0x400, 0x10, 0x80
+        info = SHFILEINFOW()
+        # USEFILEATTRIBUTES: only the extension matters, the file itself is never touched
+        ok = ctypes.windll.shell32.SHGetFileInfoW("x" + ext, FILE_ATTRIBUTE_NORMAL, ctypes.byref(info),
+                                                  ctypes.sizeof(info), SHGFI_TYPENAME | SHGFI_USEFILEATTRIBUTES)
+        return info.szTypeName.strip() if ok else ""
+    except Exception:  # noqa: BLE001 – the column is a convenience, never an error
+        return ""
+
+
+def file_type(name, is_dir):
+    """Text of the Typ column: "Složka", the Windows type name, or "Soubor XLSX" as a fallback."""
+    if is_dir:
+        return "Složka"
+    ext = os.path.splitext(name)[1].lower()
+    if ext not in _TYPE_NAMES:
+        _TYPE_NAMES[ext] = shell_type_name(ext) or (f"Soubor {ext[1:].upper()}" if ext else "Soubor")
+    return _TYPE_NAMES[ext]
 
 
 def list_drives():
@@ -267,7 +305,36 @@ def open_with_default_app(path):
 
 # ---------------------------------------------------------------- workers (run in a thread)
 
+OVERWRITE_ALL, OVERWRITE_OLDER, OVERWRITE_SKIP = "all", "older", "skip"
+
+
+def target_is_newer(src, dst):
+    """True if the existing file dst is newer than src or just as old (it would be no update)."""
+    try:
+        return os.path.getmtime(dst) >= os.path.getmtime(src) - MTIME_TOLERANCE
+    except OSError:
+        return False
+
+
+def newer_targets(sources, dest):
+    """[(name, source mtime, target mtime)] of files whose copy in dest is newer than the source."""
+    found = []
+    for src in sources:
+        dst = os.path.join(dest, os.path.basename(src))
+        try:
+            if os.path.isfile(src) and os.path.isfile(dst):
+                s_time, d_time = os.path.getmtime(src), os.path.getmtime(dst)
+                if d_time > s_time + MTIME_TOLERANCE:
+                    found.append((os.path.basename(src), s_time, d_time))
+        except OSError:
+            continue
+    return found
+
+
 def transfer_worker(sources, dest, move, overwrite, cancel, report):
+    """Copy or move sources into dest. overwrite says what happens to items that already exist there:
+    OVERWRITE_ALL, OVERWRITE_OLDER (only files older than the source are replaced, also inside merged
+    folders) or OVERWRITE_SKIP. A file that is not copied always stays in the source, also when moving."""
     errors = []
     verb = "Přesouvám" if move else "Kopíruji"
     for i, src in enumerate(sources, 1):
@@ -276,11 +343,18 @@ def transfer_worker(sources, dest, move, overwrite, cancel, report):
         label = f"{verb} {i}/{len(sources)}"
         report(f"{label}: {name}")
         copier = progress_copier(label, report, cancel)
+        kept = []  # files left in the source because the target is newer
+
+        def careful_copier(s, d):
+            if overwrite == OVERWRITE_OLDER and os.path.lexists(d) and target_is_newer(s, d):
+                kept.append(s)
+                return d
+            return copier(s, d)
         try:
             if cancel.is_set():
                 raise Cancelled
             exists = os.path.lexists(target)
-            if exists and not overwrite:
+            if exists and overwrite == OVERWRITE_SKIP:
                 continue
             if exists and os.path.isdir(src) != os.path.isdir(target):
                 errors.append(f"{name}: v cíli existuje položka jiného typu")
@@ -290,17 +364,38 @@ def transfer_worker(sources, dest, move, overwrite, cancel, report):
                 continue
             # copy (or overwrite-move = copy over the target, then remove the source)
             if os.path.isdir(src):
-                shutil.copytree(src, target, dirs_exist_ok=True, copy_function=copier)
+                shutil.copytree(src, target, dirs_exist_ok=True, copy_function=careful_copier)
             else:
-                copier(src, target)
+                careful_copier(src, target)
             if move:
-                remove_path(src)
+                if kept:
+                    remove_copied(src, kept)
+                else:
+                    remove_path(src)
         except Cancelled:
             errors.append("Přerušeno uživatelem.")
             break
         except OSError as e:
             errors.append(f"{name}: {e}")
     return errors
+
+
+def remove_copied(src, kept):
+    """After a move: delete what was copied from src, keep the files in `kept` and the folders holding them."""
+    keep = {os.path.normcase(os.path.abspath(k)) for k in kept}
+    if not os.path.isdir(src):
+        if os.path.normcase(os.path.abspath(src)) not in keep:
+            os.remove(src)
+        return
+    for root, dirs, files in os.walk(src, topdown=False):
+        for f in files:
+            path = os.path.join(root, f)
+            if os.path.normcase(os.path.abspath(path)) not in keep:
+                os.remove(path)
+        try:
+            os.rmdir(root)  # only succeeds for folders left empty
+        except OSError:
+            pass
 
 
 def delete_worker(paths, report):
@@ -557,7 +652,8 @@ def load_tools():
                 raise ValueError("vložený soubor nesmí dál vkládat ('vlozit')")
             tools += parse_tools(inc, os.path.basename(path), os.path.dirname(path))
         except FileNotFoundError:
-            errors.append(f"Vložený soubor nástrojů neexistuje:\n{path}")
+            errors.append(f"Vložený soubor nástrojů neexistuje:\n{path}\n"
+                          "Oprava: Nástroje → Přidat nástroje projektu… a vyber jeho dvojpanel_nastroje.json.")
         except (OSError, ValueError) as e:
             errors.append(f"Chyba ve vloženém souboru nástrojů {path}:\n{e}")
     return tools, "\n\n".join(errors) or None
@@ -594,6 +690,9 @@ EMPTY_PLACEHOLDER = {"soubor": "Pod kurzorem v aktivním panelu není soubor.",
 
 
 PROTOCOL_PREFIX = "DVOJPANEL:"  # output lines a tool addresses to Dvojpanel (not shown in the log)
+PROMPT_DELAY = 0.3  # s; an unfinished output line this quiet is checked for being an input prompt
+PROMPT_END = re.compile(r"[:?>\]]\s*$")  # "Volba [1]: ", "Pokračovat? ", "C:\>"
+PAUSE_TEXT = re.compile(r"libovoln|any key", re.IGNORECASE)  # cmd's pause: "…libovolné klávesy…"
 PREVIEW_OK = (0, 2)  # preview exit codes that still allow the real run (2 = needs attention)
 
 FILE_PROMPTS = {"vybrat_soubor": ("open", "Vyber soubor"), "ulozit_soubor": ("save", "Uložit jako")}
@@ -605,6 +704,13 @@ def parse_file_prompt(label, default_label, tool_exts):
     exts = exts.replace(",", " ").split() if sep else list(tool_exts)
     exts = [e.lower() if e.startswith(".") else "." + e.lower() for e in exts]
     return text.strip() or default_label, exts
+
+
+def looks_like_prompt(text):
+    """Is an unfinished output line a question the tool waits on (input(), set /p, pause)?"""
+    if text.startswith(PROTOCOL_PREFIX):
+        return False
+    return not text.strip() or bool(PROMPT_END.search(text) or PAUSE_TEXT.search(text))
 
 
 def build_command(tool, ctx, ask, pick=None, answers=None, extra=()):
@@ -687,10 +793,115 @@ def build_command(tool, ctx, ask, pick=None, answers=None, extra=()):
     return cmd, cwd
 
 
+# ---------------------------------------------------------------- small dialogs
+
+def modal_dialog(parent, title):
+    """A Toplevel that behaves like a message box: on top of parent, Esc closes it."""
+    win = tk.Toplevel(parent)
+    win.title(title)
+    win.transient(parent)
+    win.resizable(False, False)
+    win.bind("<Escape>", lambda e: win.destroy())
+    return win
+
+
+def show_modal(parent, win, focus):
+    """Center win over parent, wait until it is closed."""
+    win.update_idletasks()
+    x = parent.winfo_rootx() + max((parent.winfo_width() - win.winfo_reqwidth()) // 2, 0)
+    y = parent.winfo_rooty() + max((parent.winfo_height() - win.winfo_reqheight()) // 3, 0)
+    win.geometry(f"+{x}+{y}")
+    win.grab_set()
+    focus.focus_set()
+    parent.wait_window(win)
+
+
+def ask_conflict(parent, message):
+    """F5/F6 with items that already exist: OVERWRITE_OLDER, OVERWRITE_ALL, OVERWRITE_SKIP or None (cancel).
+    Enter presses the focused button, arrows move between the buttons."""
+    win = modal_dialog(parent, "Položky už existují")
+    ttk.Label(win, text=message, justify="left", padding=12).pack(fill="x")
+    result = {"value": None}
+    row = ttk.Frame(win, padding=(12, 0, 12, 12))
+    row.pack(fill="x")
+    buttons = []
+    for value, text in ((OVERWRITE_OLDER, "Přepsat jen starší"), (OVERWRITE_ALL, "Přepsat vše"),
+                        (OVERWRITE_SKIP, "Přeskočit existující"), (None, "Storno")):
+        b = ttk.Button(row, text=text, command=lambda v=value: (result.update(value=v), win.destroy()))
+        b.pack(side="left", padx=(0, 6))
+        b.bind("<Return>", lambda e: e.widget.invoke())
+        buttons.append(b)
+    for i, b in enumerate(buttons):
+        b.bind("<Right>", lambda e, i=i: buttons[(i + 1) % len(buttons)].focus_set())
+        b.bind("<Left>", lambda e, i=i: buttons[i - 1].focus_set())
+    show_modal(parent, win, buttons[0])
+    return result["value"]
+
+
+def conflict_message(sources, dest, conflicts):
+    """Text of the overwrite question: how many items exist, which targets are NEWER than the source."""
+    lines = [f"V cíli už existuje {len(conflicts)} z {len(sources)} položek."]
+    newer = newer_targets(conflicts, dest)
+    if newer:
+        lines += ["", f"POZOR: v cíli je NOVĚJŠÍ verze u {len(newer)} souborů:"]
+        for name, s_time, d_time in newer[:8]:
+            lines.append(f"   {name}\n        v cíli {fmt_time(d_time)}   ×   kopírovaný {fmt_time(s_time)}")
+        if len(newer) > 8:
+            lines.append(f"   … a dalších {len(newer) - 8}")
+    else:
+        lines += ["", "Žádný z existujících souborů není v cíli novější."]
+    folders = [c for c in conflicts if os.path.isdir(c) and os.path.isdir(os.path.join(dest, os.path.basename(c)))]
+    if folders:
+        lines += ["", f"Složky ({len(folders)}) se sloučí; volba platí pro každý soubor uvnitř."]
+    lines += ["",
+              "Přepsat jen starší – nahradí jen soubory, které jsou v cíli starší;",
+              "        novější a stejně staré v cíli zůstanou (při přesunu i ve zdroji)",
+              "Přepsat vše – nahradí všechny existující soubory, i novější",
+              "Přeskočit existující – existující položky se nezmění"]
+    return "\n".join(lines)
+
+
+def ask_tool_input(parent, title, context, prompt):
+    """A running tool waits for input (Python input(), set /p, pause). Returns the text, or None, which
+    closes the tool's input (the tool then ends as if it reached the end of a file)."""
+    win = modal_dialog(parent, f"{title} – zadání")
+    win.resizable(True, False)
+    body = ttk.Frame(win, padding=12)
+    body.pack(fill="both", expand=True)
+    if context:
+        ttk.Label(body, text="Nástroj vypsal:").pack(anchor="w")
+        text = tk.Text(body, height=min(len(context), 14), width=80, wrap="word", font=("Consolas", 9),
+                       relief="flat", background="#f4f4f4")
+        text.insert("1.0", "\n".join(context))
+        text.configure(state="disabled")
+        text.pack(fill="x", pady=(2, 8))
+    ttk.Label(body, text=prompt.strip() or "Nástroj čeká na vstup:",
+              font=("Segoe UI", 10, "bold")).pack(anchor="w")
+    var = tk.StringVar()
+    entry = ttk.Entry(body, textvariable=var, width=60)
+    entry.pack(fill="x", pady=(4, 0))
+    ttk.Label(body, text="Enter = odeslat (i prázdné = výchozí volba nástroje)   Esc = ukončit vstup",
+              foreground="#666666").pack(anchor="w", pady=(4, 0))
+    result = {"value": None}
+
+    def send():
+        result["value"] = var.get()
+        win.destroy()
+    entry.bind("<Return>", lambda e: send())
+    entry.bind("<KP_Enter>", lambda e: send())
+    row = ttk.Frame(win, padding=(12, 0, 12, 12))
+    row.pack(fill="x")
+    ttk.Button(row, text="Odeslat", command=send).pack(side="left")
+    ttk.Button(row, text="Ukončit vstup", command=win.destroy).pack(side="left", padx=6)
+    show_modal(parent, win, entry)
+    return result["value"]
+
+
 # ---------------------------------------------------------------- one panel
 
 class Pane(ttk.Frame):
-    COLUMNS = ("name", "size", "date")
+    COLUMNS = ("name", "type", "size", "date")
+    TITLES = {"name": "Název", "type": "Typ", "size": "Velikost", "date": "Změněno"}
 
     def __init__(self, master, app):
         super().__init__(master)
@@ -722,9 +933,10 @@ class Pane(ttk.Frame):
         body = ttk.Frame(self)
         body.pack(fill="both", expand=True)
         self.tree = ttk.Treeview(body, columns=self.COLUMNS, show="headings", selectmode="extended")
-        for col, title in zip(self.COLUMNS, ("Název", "Velikost", "Změněno")):
-            self.tree.heading(col, text=title, command=lambda c=col: self.sort_by(c))
-        self.tree.column("name", width=280)
+        for col in self.COLUMNS:
+            self.tree.heading(col, command=lambda c=col: self.sort_by(c))
+        self.tree.column("name", width=190)
+        self.tree.column("type", width=120, stretch=False)
         self.tree.column("size", width=90, anchor="e", stretch=False)
         self.tree.column("date", width=125, anchor="center", stretch=False)
         self.tree.tag_configure("dir", foreground="#0b4ea2")
@@ -782,14 +994,17 @@ class Pane(ttk.Frame):
     def refresh_view(self, focus_name=None):
         self.finish_rename(False, refocus=False)  # the edited row is about to disappear
         self.cancel_rename_timer()
-        key ={"name": lambda i: i[0].lower(), "size": lambda i: i[2], "date": lambda i: i[3]}[self.sort_col]
+        key = {"name": lambda i: i[0].lower(),
+               "type": lambda i: (file_type(i[0], i[1]).lower(), i[0].lower()),
+               "size": lambda i: i[2], "date": lambda i: i[3]}[self.sort_col]
         dirs = sorted((i for i in self.items if i[1]), key=key, reverse=self.sort_rev)
         files = sorted((i for i in self.items if not i[1]), key=key, reverse=self.sort_rev)
+        self.show_sort_headings()
 
         self.tree.delete(*self.tree.get_children())
         self.sizes = {}
         if os.path.dirname(self.path) != self.path:
-            self.tree.insert("", "end", iid=UP, values=("[..]", "", ""))
+            self.tree.insert("", "end", iid=UP, values=("[..]", "", "", ""))
         self.marked &= {os.path.join(self.path, i[0]) for i in self.items}  # drop vanished items
         for name, is_dir, size, mtime in dirs + files:
             iid = os.path.join(self.path, name)
@@ -797,6 +1012,7 @@ class Pane(ttk.Frame):
             tags = (("dir",) if is_dir else ()) + (("marked",) if iid in self.marked else ())
             self.tree.insert("", "end", iid=iid, tags=tags,
                              values=(f"[{name}]" if is_dir else name,
+                                     file_type(name, is_dir),
                                      "<DIR>" if is_dir else human_size(size),
                                      fmt_time(mtime)))
 
@@ -835,6 +1051,12 @@ class Pane(ttk.Frame):
         parent = os.path.dirname(self.path)
         if parent != self.path:
             self.load(parent, focus_name=os.path.basename(self.path))
+
+    def show_sort_headings(self):
+        """The column the pane is sorted by shows ▲ (ascending: A→Z, smallest, oldest) or ▼ (descending)."""
+        for col in self.COLUMNS:
+            arrow = (" ▼" if self.sort_rev else " ▲") if col == self.sort_col else ""
+            self.tree.heading(col, text=self.TITLES[col] + arrow)
 
     def sort_by(self, col):
         if col == self.sort_col:
@@ -1278,6 +1500,346 @@ class SyncWindow(tk.Toplevel):
         self.destroy()
 
 
+# ---------------------------------------------------------------- help (F1)
+
+# Help topics: (title, text). In the text "## " starts a subheading, "• " a bullet, `x` is a key or a name,
+# a line "klávesa<TAB>popis" is a row of a table. The topic MY_TOOLS is generated from the loaded tools.
+MY_TOOLS = "Moje nástroje"
+HELP_TOPICS = [
+    ("Začínáme", """Dvojpanel je správce souborů se dvěma panely (jako Norton nebo Total Commander), který navíc umí \
+spouštět vlastní skripty – v menu Nástroje.
+
+## Okno
+• Nahoře lišta oblíbených složek, pod ní dva panely se soubory, dole výstup nástrojů a stavový řádek.
+• Aktivní panel má zelenou tečku vlevo nahoře. `Tab` přepíná mezi panely.
+• Kopírování a přesun jdou vždy z aktivního panelu do druhého.
+• Do adresního řádku nad panelem lze napsat cestu a stisknout `Enter`.
+
+## Nejčastější klávesy
+F1\tnápověda (toto okno)
+F2\tpřejmenovat
+F3 / F4\totevřít / upravit v Notepadu
+F5 / F6\tkopírovat / přesunout do druhého panelu
+F7\tnová složka
+F8\tsmazat do koše
+F9\tnabídka nástrojů
+Tab\tpřepnout panel
+Enter\totevřít složku nebo soubor
+Backspace\to úroveň výš
+
+Celý seznam je v tématu Klávesy a myš."""),
+    ("Klávesy a myš", """## Pohyb
+Tab\tpřepnutí panelu
+Enter / dvojklik\totevřít složku nebo soubor (soubor ve výchozím programu)
+Backspace\to úroveň výš (také řádek [..])
+Ctrl+R\tobnovit oba panely
+Ctrl+U\tprohodit složky levého a pravého panelu
+Ctrl+D\toblíbené složky
+Ctrl+Q\tkonec
+
+## Výběr
+Mezerník / Insert\toznačit / odznačit položku a posunout se dolů
+Ctrl+A\toznačit vše, podruhé označení zrušit
+Ctrl+klik\tpřidat položku do výběru
+Shift+šipky\tvybrat rozsah
+
+## Soubory
+F2\tpřejmenovat přímo v řádku (také pomalý druhý klik na jméno)
+F3\totevřít soubor
+F4\tupravit v Notepadu
+F5\tkopírovat do druhého panelu
+F6\tpřesunout do druhého panelu
+F7\tnová složka
+F8\tsmazat do koše
+Esc\tpřerušit probíhající kopírování / přesun
+
+## Příkazy
+F9\tnabídka nástrojů (vlastní skripty)
+Ctrl+S\tporovnat a synchronizovat složky
+F1\tnápověda
+
+## Myš
+• Klik na záhlaví sloupce řadí podle sloupce, druhý klik obrátí směr.
+• Přetažení položek do druhého panelu nebo na složku kopíruje, se `Shift` přesouvá.
+• Pomalý druhý klik na jméno vybrané položky ji přejmenuje."""),
+    ("Panely, sloupce a řazení", """## Sloupce
+Název\tjméno souboru, složky jsou v [hranatých závorkách] a modře
+Typ\tdruh souboru tak, jak ho pojmenují Windows (např. „List Microsoft Excelu“)
+Velikost\tvelikost souboru, u složek <DIR>
+Změněno\tdatum a čas poslední změny
+
+## Řazení
+• Klik na záhlaví sloupce seřadí panel podle něj. Druhý klik na stejné záhlaví obrátí směr.
+• Sloupec, podle kterého se řadí, má v záhlaví šipku: `▲` vzestupně (A→Z, od nejmenšího, od nejstaršího), \
+`▼` sestupně.
+• Složky jsou vždy nahoře, řadí se zvlášť stejným způsobem.
+
+## Označené a vybrané položky
+• Mezerník nebo Insert položku označí (červeně). Označené mají přednost před výběrem: F5, F6, F8 i nástroje \
+pracují s označenými, a když žádné nejsou, s vybranými.
+• Po úspěšném kopírování nebo přesunu se označení zruší, při přechodu do jiné složky také.
+• Stavový řádek pod panelem ukazuje počet a velikost vybraných / označených položek."""),
+    ("Kopírování, přesun a mazání", """## F5 kopírovat, F6 přesunout
+• Kopíruje se z aktivního panelu do složky druhého panelu (nebo kam položky přetáhneš myší).
+• Program se nejdřív zeptá na potvrzení.
+• U souborů od 16 MB ukazuje průběh v procentech. `Esc` kopírování přeruší.
+• Soubor se zapisuje nejdřív do dočasného souboru a cíl nahradí až po dokončení, takže přerušené kopírování \
+nikdy nepoškodí existující soubor.
+
+## Když položka v cíli už existuje
+Program ukáže, kolik položek už v cíli je, a **upozorní na soubory, které jsou v cíli NOVĚJŠÍ** než ty, které \
+kopíruješ (s datem obou). Pak nabídne:
+Přepsat jen starší\tnahradí jen soubory, které jsou v cíli starší; novější a stejně staré nechá (výchozí volba)
+Přepsat vše\tnahradí všechno, i novější soubory
+Přeskočit existující\texistující položky nechá být, zkopíruje jen nové
+Storno\tnic neudělá
+• Složky se sloučí; volba platí pro každý soubor uvnitř.
+• Při přesunu zůstane soubor, který se nepřepsal, ve zdroji – nic se neztratí.
+
+## F8 smazat
+• Maže do koše. Na síťovém disku koš není – program varuje, že se smaže trvale.
+
+## F2 přejmenovat
+• Jméno se upraví přímo v řádku, předvybrané je bez přípony. `Enter` potvrdí, `Esc` zruší.
+• Existující položku nikdy nepřepíše."""),
+    ("Oblíbené a nastavení", """## Oblíbené složky
+• Lišta nad panely: klik otevře složku v aktivním panelu, pravé tlačítko nabídne druhý panel nebo odebrání.
+• `+ Přidat` uloží složku aktivního panelu. Menu Oblíbené (Ctrl+D) umí totéž.
+• Seznam je v souboru `oblibene.json` vedle programu.
+
+## Výchozí složky po spuštění
+• Soubor → Uložit aktuální složky jako výchozí. Uloží se do `dvojpanel.json`.
+
+## Porovnání složek (Ctrl+S)
+• Porovná složky levého a pravého panelu, ukáže rozdíly a navrhne směr kopírování (novější vyhrává).
+• Akci u řádků změníš šipkami → / ← nebo mezerníkem (nic nedělat). Synchronizace jen kopíruje, nikdy nemaže.
+
+## Zástupce na hlavní panel
+• Soubor → Vytvořit zástupce v nabídce Start, pak Start → „Dvojpanel“ → pravým tlačítkem → Připnout."""),
+    ("Nástroje – jak je používat", """Nástroje jsou vlastní skripty (Python, .bat, .exe), které Dvojpanel spustí nad soubory a složkami \
+v panelech. Nabídku otevře `F9` nebo menu Nástroje; nástroje projektu (např. Windchill) jsou v podmenu.
+
+## Co se stane po spuštění nástroje
+1. Program zkontroluje, že máš vybrané, co nástroj potřebuje (soubor pod kurzorem, označené soubory, \
+správnou příponu). Když ne, řekne co chybí a nic nespustí.
+2. Když nástroj potřebuje hodnotu (např. čísla dílů PN nebo číslo CR), **zeptá se v okně**.
+3. Když potřebuje soubor, otevře okno pro výběr souboru (popisek v titulku říká, který soubor chce).
+4. Nástroj běží na pozadí, jeho výpis se ukazuje v dolním panelu. Na začátku je ▶ a název, na konci ■ Hotovo, \
+nebo ■ Skončilo s chybou.
+5. Po doběhnutí se panely obnoví; některé nástroje otevřou složku s výsledky ve druhém panelu.
+
+## Nástroj, který se ptá sám (spuštěný bez parametrů)
+Některé skripty se po spuštění bez parametrů samy ptají – nabídnou volby („Volba [1]:“) nebo chtějí číslo \
+PN či CR. Dvojpanel takovou otázku pozná a **otevře okno pro zadání**: nahoře je, co nástroj vypsal \
+(např. nabídka voleb), pod tím otázka a pole pro odpověď.
+Enter\todešle odpověď (i prázdnou – skript pak použije výchozí volbu)
+Esc / Ukončit vstup\tukončí vstup; skript skončí, jako by dostal konec souboru
+• Otázek může být víc za sebou, okno se ukáže pro každou.
+• Pozná se otázka, která končí dvojtečkou, otazníkem, `]` nebo `>`, a výzva „stiskněte libovolnou klávesu“.
+
+## Náhled a potvrzení
+Nástroje, které něco zapisují (např. doplnění přehledu PN), běží nejdřív **jako náhled**: nic nezapíšou, jen \
+vypíšou, co by změnily. Pak se program zeptá **Provést změny naostro?** Ano spustí zápis, Ne nic nezmění. \
+Hodnoty a soubory zadané pro náhled platí i pro zápis, podruhé se neptá. Když náhled nenajde nic ke změně, \
+program to oznámí a na nic se neptá.
+
+## Další
+• Běží vždy jen jeden nástroj. Zastavit ho lze v menu Nástroje → Zastavit běžící nástroj.
+• Výpis smaže Nástroje → Vymazat výstup.
+• Seznam tvých nástrojů s popisem, co který dělá a co potřebuje, je v tématu Moje nástroje."""),
+    (MY_TOOLS, ""),
+    ("Nástroje – nastavení", """Seznam nástrojů je v souboru `nastroje.json` vedle programu. Při prvním spuštění se vytvoří \
+ze šablony `nastroje.example.json`. Upravit ho lze z menu Nástroje → Upravit nastroje.json, pak \
+Nástroje → Načíst nástroje znovu.
+
+## Nástroje projektu (Windchill)
+Nástroje Windchillu nejsou vypsané přímo v `nastroje.json`. Projekt Windchill má vlastní seznam \
+`dvojpanel_nastroje.json` a `nastroje.json` na něj jen odkazuje (klíč `vlozit`). Výhoda: když se projekt \
+aktualizuje (git pull), nové nástroje se v menu objeví samy po Načíst nástroje znovu.
+
+Šablona už odkaz na `C:/Projects/MojeAplikace/Windchill/dvojpanel_nastroje.json` obsahuje. Když nástroje \
+Windchillu v menu chybí:
+• nahoře v menu Nástroje je ⚠ s důvodem (nejčastěji „Vložený soubor nástrojů neexistuje“ – projekt je jinde),
+• zvol Nástroje → **Přidat nástroje projektu…** a vyber soubor `dvojpanel_nastroje.json` ve složce \
+projektu. Program odkaz zapíše do `nastroje.json` sám, nic se nepíše ručně.
+
+## Jeden nástroj v nastroje.json
+nazev\ttext v menu (povinné)
+skript\tcesta ke skriptu .py, .bat, .cmd, .exe (povinné)
+popis\tvysvětlení pro nápovědu (Moje nástroje)
+argumenty\tseznam argumentů, může obsahovat zástupné symboly
+skupina\tpodmenu v menu Nástroje
+pripony\tpovolené přípony souborů, např. [".xlsx"]
+nahled\targument pro zkušební běh, např. "--jen-kontrola"
+zobrazit_slozku\tsložka, která se po úspěchu otevře ve druhém panelu
+pracovni_slozka\tpracovní složka (výchozí je složka skriptu)
+python\tjiný Python, např. .venv/Scripts/python.exe
+
+## Zástupné symboly v argumentech
+{soubory}\tvšechny označené / vybrané soubory v aktivním panelu
+{soubor}\tsoubor pod kurzorem v aktivním panelu
+{soubor_cil}\tsoubor pod kurzorem ve druhém panelu
+{slozka}\tsložka aktivního panelu
+{cil}\tsložka druhého panelu
+{skript_slozka}\tsložka skriptu
+{zadat:Popisek}\thodnota, na kterou se program zeptá v okně
+{vybrat_soubor:Popisek|.xlsx}\tsoubor vybraný v okně Otevřít
+{ulozit_soubor:Popisek|.xlsx}\tcesta z okna Uložit jako
+
+Cesty mohou používat / i \\ a proměnné jako %USERPROFILE%. Relativní cesty ve vloženém souboru \
+projektu jsou vůči jeho složce. Podrobně v README.md."""),
+    ("Pro autory skriptů", """• Výstup (print) i chyby se zobrazují v dolním panelu, kódování UTF-8.
+• Návratový kód 0 = úspěch, cokoli jiného = chyba. U náhledu znamená 2 „něco vyžaduje pozornost“ \
+a zápis je stále možný.
+• input() funguje: Dvojpanel otázku ukáže v okně. Výzva má končit dvojtečkou nebo otazníkem \
+(„Číslo CR: “). Esc v okně vstup zavře a input() skončí chybou EOFError.
+• Řádek DVOJPANEL:BEZ_ZMEN v náhledu znamená „není co zapsat“ – program se pak neptá na zápis. \
+Řádky začínající DVOJPANEL: se ve výpisu nezobrazují.
+• Proměnná prostředí DVOJPANEL (verze programu) říká, že skript běží z Dvojpanelu. .bat s pause \
+nebo timeout ji může použít: if defined DVOJPANEL exit /b 0"""),
+]
+
+
+def describe_tool(tool):
+    """Human-readable lines about one tool for the help: what it asks for and works with."""
+    lines = []
+    if tool.get("popis"):
+        lines.append(str(tool["popis"]))
+    args = [str(a) for a in tool.get("argumenty", [])]
+    joined = " ".join(args)
+    for m in PLACEHOLDER.finditer(joined):
+        name, label = m.group(1), m.group(2)
+        if name == "zadat":
+            lines.append(f"• zeptá se v okně: {label or 'Hodnota'}")
+        elif name in FILE_PROMPTS:
+            text, exts = parse_file_prompt(label, FILE_PROMPTS[name][1], tool.get("pripony", []))
+            verb = "vybereš soubor" if name == "vybrat_soubor" else "zvolíš, kam uložit"
+            lines.append(f"• {verb}: {text}" + (f" ({', '.join(exts)})" if exts else ""))
+    meaning = {"{soubory}": "pracuje s označenými / vybranými soubory v aktivním panelu",
+               "{soubor}": "pracuje se souborem pod kurzorem v aktivním panelu",
+               "{soubor_cil}": "a se souborem pod kurzorem ve druhém panelu",
+               "{slozka}": "dostane složku aktivního panelu",
+               "{cil}": "dostane složku druhého panelu (např. pro výsledky)"}
+    for placeholder, text in meaning.items():
+        if placeholder in joined:
+            lines.append(f"• {text}")
+    if tool.get("pripony"):
+        lines.append(f"• jen soubory: {', '.join(tool['pripony'])}")
+    if not args:
+        lines.append("• spustí se bez parametrů; když se skript na něco zeptá (např. PN nebo CR), "
+                     "objeví se okno pro zadání")
+    if tool.get("nahled"):
+        lines.append("• nejdřív náhled bez zápisu, naostro až po potvrzení")
+    if tool.get("zobrazit_slozku"):
+        lines.append(f"• po doběhnutí otevře ve druhém panelu: {tool_path(tool, tool['zobrazit_slozku'])}")
+    command = os.path.basename(tool["skript"]) + (" " + joined if joined else "")
+    lines.append(f"Spouští: `{command}`")
+    return lines
+
+
+def my_tools_text(tools, error):
+    """The generated help topic: every loaded tool grouped like the menu."""
+    parts = []
+    if error:
+        parts.append("## ⚠ Problém s nástroji\n" + error.replace("\n\n", "\n") + "\n")
+    if not tools:
+        parts.append("Žádné nástroje nejsou načtené. Viz téma Nástroje – nastavení.")
+        return "\n".join(parts)
+    parts.append("Všechny nástroje z menu Nástroje (F9). Popis vzniká z jejich nastavení; vlastní text "
+                 "doplní klíč `popis` v souboru nástrojů.")
+    groups = {}
+    for tool in tools:
+        groups.setdefault(tool.get("skupina") or "", []).append(tool)
+    for group, items in groups.items():
+        parts.append(f"\n## {group or 'Bez skupiny'}")
+        for tool in items:
+            parts.append(f"\n**{tool['nazev']}**")
+            parts.extend(describe_tool(tool))
+    return "\n".join(parts)
+
+
+class HelpWindow(tk.Toplevel):
+    """F1: topics on the left, text on the right."""
+
+    def __init__(self, app):
+        super().__init__(app)
+        self.app = app
+        self.title(f"Nápověda – Dvojpanel {__version__}")
+        self.geometry("980x640")
+        self.topics = list(HELP_TOPICS)
+        self.listbox = tk.Listbox(self, activestyle="none", exportselection=False, width=28,
+                                  font=("Segoe UI", 10))
+        for title, _ in self.topics:
+            self.listbox.insert("end", title)
+        self.listbox.pack(side="left", fill="y", padx=(6, 0), pady=6)
+        self.listbox.bind("<<ListboxSelect>>", lambda e: self.show_selected())
+        self.text = tk.Text(self, wrap="word", padx=14, pady=10, font=("Segoe UI", 10), relief="flat",
+                            spacing1=2, spacing3=2, tabs=(250,), cursor="arrow")
+        scroll = ttk.Scrollbar(self, orient="vertical", command=self.text.yview)
+        self.text.configure(yscrollcommand=scroll.set)
+        scroll.pack(side="right", fill="y", pady=6)
+        self.text.pack(side="left", fill="both", expand=True, pady=6)
+        self.text.tag_configure("h1", font=("Segoe UI", 15, "bold"), spacing3=8)
+        self.text.tag_configure("h2", font=("Segoe UI", 11, "bold"), spacing1=12, spacing3=4,
+                                foreground="#0b4ea2")
+        self.text.tag_configure("bold", font=("Segoe UI", 10, "bold"))
+        self.text.tag_configure("code", font=("Consolas", 10), background="#eeeeee")
+        self.text.tag_configure("key", font=("Consolas", 10, "bold"))
+        self.text.tag_configure("row", lmargin1=10, lmargin2=250)  # a wrapped row continues under its text
+        self.text.tag_configure("bullet", lmargin1=10, lmargin2=24)
+        self.bind("<Escape>", lambda e: self.destroy())
+        self.bind("<F1>", lambda e: "break")
+
+    def show(self, title=None):
+        titles = [t for t, _ in self.topics]
+        index = titles.index(title) if title in titles else (self.listbox.curselection() or (0,))[0]
+        self.listbox.selection_clear(0, "end")
+        self.listbox.selection_set(index)
+        self.listbox.see(index)
+        self.show_selected()
+        self.deiconify()
+        self.lift()
+        self.listbox.focus_set()
+
+    def show_selected(self):
+        sel = self.listbox.curselection()
+        if not sel:
+            return
+        title, body = self.topics[sel[0]]
+        if title == MY_TOOLS:
+            body = my_tools_text(self.app.tools, self.app.tools_error)
+        t = self.text
+        t.configure(state="normal")
+        t.delete("1.0", "end")
+        t.insert("end", title + "\n", "h1")
+        for line in body.split("\n"):
+            if line.startswith("## "):
+                t.insert("end", line[3:] + "\n", "h2")
+            elif "\t" in line:
+                key, desc = line.split("\t", 1)
+                t.insert("end", key, ("row", "key"))
+                t.insert("end", "\t", "row")
+                self.insert_inline(desc, "row")
+                t.insert("end", "\n", "row")
+            else:
+                self.insert_inline(line, "bullet" if line.startswith(("• ", "1.", "2.", "3.", "4.", "5."))
+                                   else ())
+                t.insert("end", "\n")
+        t.configure(state="disabled")
+        t.yview_moveto(0)
+
+    def insert_inline(self, text, base):
+        """`code` and **bold** inside a line."""
+        base = (base,) if isinstance(base, str) else tuple(base)
+        for i, part in enumerate(re.split(r"(`[^`]+`|\*\*[^*]+\*\*)", text)):
+            if part.startswith("`") and part.endswith("`") and len(part) > 1:
+                self.text.insert("end", part[1:-1], base + ("code",))
+            elif part.startswith("**") and part.endswith("**") and len(part) > 3:
+                self.text.insert("end", part[2:-2], base + ("bold",))
+            elif part:
+                self.text.insert("end", part, base)
+
+
 # ---------------------------------------------------------------- main window
 
 class FavoritesBar(ttk.Frame):
@@ -1342,9 +1904,17 @@ class App(tk.Tk):
         self.cancellable = False
         self.job_pane = None
         self.sync_window = None
+        self.help_window = None
         self.settings, self.settings_error = load_settings()
         self.drag = None  # {"pane", "items", "target"} while items are dragged with the mouse
         self.last_dirs = {}  # (tool, label) -> folder last used in a {vybrat_soubor}/{ulozit_soubor} dialog
+        # output of the running tool: lines are logged when complete; the unfinished rest may be a prompt
+        self.tool_out = ""
+        self.tool_out_time = 0.0
+        self.tool_lines = []  # recent output lines, shown as context in the input window
+        self.tool_no_change = False
+        self.tool_title = ""
+        self.tool_asking = False  # the input window is open (or about to open)
 
         self.fav_bar = FavoritesBar(self, self)
         self.fav_bar_var = tk.BooleanVar(value=True)
@@ -1374,7 +1944,7 @@ class App(tk.Tk):
             side="left", fill="x", expand=True)
         self.progress = ttk.Progressbar(status, length=220, maximum=100)  # packed only while in use
 
-        keys = [("F2", "Přejmenovat", self.rename), ("F3", "Otevřít", self.open_current),
+        keys = [("F1", "Nápověda", self.show_help), ("F2", "Přejmenovat", self.rename), ("F3", "Otevřít", self.open_current),
                 ("F4", "Upravit", self.edit_current), ("F5", "Kopírovat", lambda: self.transfer(False)),
                 ("F6", "Přesunout", lambda: self.transfer(True)), ("F7", "Nová složka", self.make_dir),
                 ("F8", "Smazat", self.delete), ("F9", "Nástroje", self.show_tools_popup)]
@@ -1561,15 +2131,11 @@ class App(tk.Tk):
         if not messagebox.askokcancel(verb, f"{verb} {len(sources)} položek do:\n{dest}"):
             return
         conflicts = [s for s in sources if os.path.lexists(os.path.join(dest, os.path.basename(s)))]
-        overwrite = False
+        overwrite = OVERWRITE_SKIP
         if conflicts:
-            answer = messagebox.askyesnocancel(
-                "Položky už existují",
-                f"{len(conflicts)} položek v cíli už existuje.\n\n"
-                "Ano = přepsat (složky se sloučí)\nNe = přeskočit\nStorno = nic nedělat")
-            if answer is None:
+            overwrite = ask_conflict(self, conflict_message(sources, dest, conflicts))
+            if overwrite is None:
                 return
-            overwrite = answer
         self.job_pane = src_pane
         self.run_job(transfer_worker, sources, dest, move, overwrite, self.cancel, cancellable=True)
 
@@ -1681,12 +2247,15 @@ class App(tk.Tk):
                     func(*args)
                 elif kind == "log":
                     self.log(data)
+                elif kind == "out":
+                    self.tool_output(data)
                 elif kind == "done":
                     self.finish_job(data)
                 elif kind == "tool_done":
                     self.finish_tool(*data)
         except queue.Empty:
             pass
+        self.check_tool_prompt()
         self.after(100, self.poll_jobs)
 
     def show_progress(self, text, percent=None):
@@ -1744,12 +2313,21 @@ class App(tk.Tk):
         self.tools_menu = tk.Menu(menubar, tearoff=False)
         menubar.add_cascade(label="Nástroje", menu=self.tools_menu)
         help_menu = tk.Menu(menubar, tearoff=False)
+        help_menu.add_command(label="Nápověda", accelerator="F1", command=self.show_help)
+        help_menu.add_command(label="Moje nástroje", command=lambda: self.show_help(MY_TOOLS))
+        help_menu.add_separator()
         help_menu.add_command(label="O programu", command=lambda: messagebox.showinfo(
             "O programu", f"Dvojpanel {__version__}\nPython {sys.version.split()[0]}"))
         menubar.add_cascade(label="Nápověda", menu=help_menu)
         self.configure(menu=menubar)
         self.reload_tools(startup=True)
         self.reload_favorites(startup=True)
+
+    def show_help(self, topic=None):
+        if self.help_window is None or not self.help_window.winfo_exists():
+            self.help_window = HelpWindow(self)
+            topic = topic or HELP_TOPICS[0][0]
+        self.help_window.show(topic)
 
     def make_shortcut(self):
         if not IS_WINDOWS:
@@ -1927,8 +2505,11 @@ class App(tk.Tk):
         menu.add_separator()
         menu.add_command(label="Upravit nastroje.json", command=self.edit_tools)
         menu.add_command(label="Načíst nástroje znovu", command=self.reload_tools)
+        menu.add_command(label="Přidat nástroje projektu…", command=self.add_tool_file)
         menu.add_command(label="Zastavit běžící nástroj", command=self.stop_tool)
         menu.add_command(label="Vymazat výstup", command=self.clear_log)
+        menu.add_separator()
+        menu.add_command(label="Nápověda k nástrojům", command=lambda: self.show_help(MY_TOOLS))
 
     def reload_tools(self, startup=False):
         self.tools, self.tools_error = load_tools()
@@ -1939,6 +2520,49 @@ class App(tk.Tk):
                 messagebox.showerror("Nástroje", self.tools_error)
         elif not startup:
             self.status_var.set(f"Načteno nástrojů: {len(self.tools)}")
+
+    def add_tool_file(self):
+        """Pick a project's tool file (dvojpanel_nastroje.json) and add it to "vlozit" in nastroje.json."""
+        if not CONFIG_FILE.exists():
+            load_tools()  # creates it from the example
+        try:
+            data = json.loads(CONFIG_FILE.read_text(encoding="utf-8-sig"))
+            if not isinstance(data, dict):
+                raise ValueError("soubor musí obsahovat objekt { … }")
+        except (OSError, ValueError) as e:  # never overwrite a file the user has to fix by hand
+            messagebox.showerror("Nástroje", f"nastroje.json nelze upravit, oprav ho nejdřív ručně:\n{e}")
+            return
+        path = filedialog.askopenfilename(
+            parent=self, title="Vyber soubor nástrojů projektu (dvojpanel_nastroje.json)",
+            initialdir=self.active.path, filetypes=[("Soubor nástrojů (*.json)", "*.json"),
+                                                    ("Všechny soubory", "*.*")])
+        if not path:
+            return
+        path = os.path.normpath(path)
+        try:
+            inc = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+            if isinstance(inc, dict) and "vlozit" in inc:
+                raise ValueError("vložený soubor nesmí dál vkládat ('vlozit')")
+            found = parse_tools(inc, os.path.basename(path), os.path.dirname(path))
+            if not found:
+                raise ValueError("neobsahuje žádné nástroje ('nastroje': [...])")
+        except (OSError, ValueError) as e:
+            messagebox.showerror("Nástroje", f"Tohle není soubor nástrojů:\n{path}\n\n{e}")
+            return
+        includes = data.get("vlozit", [])
+        includes = [includes] if isinstance(includes, str) else list(includes)
+        if any(os.path.normcase(expand_path(i)) == os.path.normcase(path) for i in includes):
+            messagebox.showinfo("Nástroje", f"Tento soubor už je vložený:\n{path}")
+            self.reload_tools()
+            return
+        data["vlozit"] = includes + [path.replace("\\", "/")]
+        try:
+            write_json(CONFIG_FILE, data)
+        except OSError as e:
+            messagebox.showerror("Nástroje", f"Nelze uložit nastroje.json:\n{e}")
+            return
+        self.reload_tools()
+        messagebox.showinfo("Nástroje", f"Přidáno {len(found)} nástrojů z:\n{path}")
 
     def show_tools_popup(self):
         menu = tk.Menu(self, tearoff=False)
@@ -2007,26 +2631,90 @@ class App(tk.Tk):
         self.log(f"\n▶ {title}\n  {line}\n  (složka: {cwd})\n")
         env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", DVOJPANEL=__version__)
         try:
+            # stdin is a pipe: when the tool asks something (input()), the answer comes from a window
             proc = subprocess.Popen(
-                cmd, cwd=cwd, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT, text=True, encoding="utf-8", errors="replace",
-                creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
+                cmd, cwd=cwd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
         except OSError as e:
             self.log(f"  Nelze spustit: {e}\n")
             return
         self.proc = proc
+        self.tool_out, self.tool_lines, self.tool_no_change = "", [], False
+        self.tool_title = title
         self.status_var.set(f"Běží: {title}")
 
         def reader():
-            no_change = False
-            for line in proc.stdout:
-                if line.startswith(PROTOCOL_PREFIX):  # messages for Dvojpanel, not for the log
-                    no_change = no_change or line.strip() == PROTOCOL_PREFIX + "BEZ_ZMEN"
-                    continue
-                self.jobs.put(("log", line))
-            self.jobs.put(("tool_done", (tool, proc.wait(), real, no_change)))
+            # raw chunks, not lines: a prompt like "Volba [1]: " has no line end
+            decoder = codecs.getincrementaldecoder("utf-8")(errors="replace")
+            while chunk := proc.stdout.read1(4096):
+                self.jobs.put(("out", (proc, decoder.decode(chunk))))
+            self.jobs.put(("out", (proc, decoder.decode(b"", final=True))))
+            self.jobs.put(("tool_done", (tool, proc.wait(), real)))
 
         threading.Thread(target=reader, daemon=True).start()
+
+    def tool_output(self, data):
+        """Output of the running tool: complete lines go to the log, the unfinished rest waits."""
+        proc, text = data
+        if proc is not self.proc or not text:
+            return
+        buf = (self.tool_out + text).replace("\r\n", "\n")
+        pending_cr = buf.endswith("\r")  # may be the first half of \r\n
+        if pending_cr:
+            buf = buf[:-1]
+        *lines, rest = buf.replace("\r", "\n").split("\n")
+        self.tool_out = rest + ("\r" if pending_cr else "")
+        self.tool_out_time = time.monotonic()
+        for line in lines:
+            self.log_tool_line(line)
+
+    def log_tool_line(self, line):
+        if line.startswith(PROTOCOL_PREFIX):  # messages for Dvojpanel, not for the log
+            self.tool_no_change = self.tool_no_change or line.strip() == PROTOCOL_PREFIX + "BEZ_ZMEN"
+            return
+        self.log(line + "\n")
+        self.tool_lines = (self.tool_lines + [line])[-40:]
+
+    def check_tool_prompt(self):
+        """Called every 100 ms: an unfinished line that stays quiet and looks like a question opens the
+        input window."""
+        if self.proc is None or self.tool_asking or not self.tool_out.rstrip("\r"):
+            return
+        if time.monotonic() - self.tool_out_time < PROMPT_DELAY or self.proc.poll() is not None:
+            return
+        if not looks_like_prompt(self.tool_out.rstrip("\r")):
+            return
+        self.tool_asking = True
+        self.after_idle(self.answer_tool_prompt, self.proc)
+
+    def answer_tool_prompt(self, proc):
+        try:
+            if proc is not self.proc:
+                return
+            prompt = self.tool_out.rstrip("\r")
+            context = [ln for ln in self.tool_lines[-14:]]
+            while context and not context[0].strip():
+                context.pop(0)
+            self.status_var.set("Nástroj čeká na zadání")
+            answer = ask_tool_input(self, self.tool_title, context, prompt)
+            if proc is not self.proc:  # the tool ended while the window was open
+                return
+            self.tool_out = ""
+            self.log(prompt + (answer if answer is not None else "") + "\n")  # like a console shows it
+            self.tool_lines = (self.tool_lines + [prompt + (answer or "")])[-40:]
+            try:
+                if answer is None:
+                    proc.stdin.close()
+                    self.log("  (vstup ukončen)\n")
+                else:
+                    proc.stdin.write((answer.replace("\r\n", "\n") + "\n").encode("utf-8"))
+                    proc.stdin.flush()
+            except (OSError, ValueError):  # the tool has just ended
+                pass
+            self.status_var.set(f"Běží: {self.tool_title}")
+        finally:
+            self.tool_asking = False
+            self.tool_out_time = time.monotonic()
 
     def pick_file(self, tool, kind, label, exts):
         """File dialog for {vybrat_soubor} / {ulozit_soubor}; starts where this prompt was last used."""
@@ -2051,7 +2739,15 @@ class App(tk.Tk):
         self.last_dirs[key] = os.path.dirname(path)
         return path
 
-    def finish_tool(self, tool, returncode, real=None, no_change=False):
+    def finish_tool(self, tool, returncode, real=None):
+        rest, self.tool_out = self.tool_out.rstrip("\r"), ""
+        if rest:
+            self.log_tool_line(rest)
+        no_change = self.tool_no_change
+        try:
+            self.proc.stdin.close()
+        except (OSError, ValueError, AttributeError):
+            pass
         self.proc = None
         if real is not None:
             self.finish_preview(tool, returncode, real, no_change)

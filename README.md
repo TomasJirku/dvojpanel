@@ -38,11 +38,14 @@ Zástupce spouští `pythonw.exe` aktuálního Pythonu, takže se běžící okn
 | F7 | nová složka |
 | F8 | smazat do koše (na síťovém disku trvale, program varuje) |
 | F9 | nabídka nástrojů |
+| F1 | nápověda (ovládání a vysvětlení všech nástrojů) |
 | Ctrl+D | oblíbené složky |
 | Ctrl+S | porovnat a synchronizovat složky |
 | Ctrl+U | prohodit složky levého a pravého panelu |
 | Esc | přerušit probíhající kopírování / přesun |
 | Ctrl+R / Ctrl+Q | obnovit / konec |
+
+Panely mají sloupce Název, Typ (druh souboru podle Windows, např. „List Microsoft Excelu“), Velikost a Změněno. Klik na záhlaví řadí, druhý klik obrátí směr; sloupec, podle kterého se řadí, má v záhlaví `▲` (vzestupně) nebo `▼` (sestupně). Složky jsou vždy nahoře.
 
 Přejmenování v řádku: předvybere se jméno bez přípony, Enter nebo klik jinam potvrdí, Esc zruší. Existující položku nikdy nepřepíše, program ohlásí chybu.
 
@@ -51,6 +54,19 @@ Přejmenování v řádku: předvybere se jméno bez přípony, Enter nebo klik 
 Položky lze přetáhnout myší **do druhého panelu** (do jeho složky) nebo **na složku** v kterémkoli panelu, včetně `[..]`. Přetažení kopíruje, se **Shiftem** přesouvá. Platí totéž co u F5 / F6: potvrzení, dotaz při kolizích, průběh v procentech. Přetahují se označené položky, pokud tah začne na označené, jinak výběr. Esc přetažení zruší. Funguje jen uvnitř Dvojpanelu, ne z/do Průzkumníku.
 
 Označené položky (červeně) mají přednost před výběrem: F5, F6, F8 i nástroje pracují s označenými, a pokud žádné nejsou, s vybranými. Po úspěšném kopírování nebo přesunu se označení zruší, při přechodu do jiné složky také.
+
+### Když položka v cíli už existuje
+
+F5 / F6 (i přetažení) se zeptá, co s položkami, které v cíli už jsou. Soubory, které jsou v cíli **novější** než kopírované, vypíše i s datem obou. Volby:
+
+| Volba | Co udělá |
+|---|---|
+| Přepsat jen starší (výchozí) | nahradí jen soubory, které jsou v cíli starší; novější a stejně staré (tolerance 2 s) nechá |
+| Přepsat vše | nahradí všechny existující soubory, i novější |
+| Přeskočit existující | zkopíruje jen to, co v cíli není |
+| Storno | nic |
+
+Složky se sloučí a volba platí pro každý soubor uvnitř. Při přesunu zůstanou nepřepsané soubory ve zdroji, nic se neztratí.
 
 U souborů od 16 MB se při kopírování ukazuje průběh v procentech ve stavovém řádku. Soubor se nejdřív zapisuje do dočasného souboru `*.dvojpanel-tmp` a teprve po dokončení nahradí cíl, takže přerušené nebo selhané kopírování nikdy nepoškodí existující soubor v cíli.
 
@@ -99,13 +115,17 @@ Všechny klíče jsou volitelné, výchozí je domovská složka (`%USERPROFILE%
 
 ## Nástroje
 
+Nápověda programu (F1, téma **Moje nástroje**) popisuje každý načtený nástroj: na co se ptá, s čím pracuje, jestli dělá náhled a kam ukládá.
+
 Nástroje se definují v `nastroje.json` vedle `dvojpanel.py`. Při prvním spuštění se soubor vytvoří ze šablony `nastroje.example.json`. Upravit ho lze z menu **Nástroje → Upravit nastroje.json** a pak **Načíst nástroje znovu**.
 
 `nastroje.json` obsahuje lokální cesty, proto není v Gitu. Šablona ano.
 
 ### Nástroje dodané projektem (`vlozit`)
 
-Projekt se skripty si může nástroje pro Dvojpanel udržovat sám ve vlastním souboru v Gitu, např. Windchill v `dvojpanel_nastroje.json`. `nastroje.json` ho jen vloží; po `git pull` v projektu stačí **Načíst nástroje znovu** a nové nástroje jsou v menu, nic se nekopíruje ani nepřepisuje:
+Projekt se skripty si může nástroje pro Dvojpanel udržovat sám ve vlastním souboru v Gitu, např. Windchill v `dvojpanel_nastroje.json`. `nastroje.json` ho jen vloží; po `git pull` v projektu stačí **Načíst nástroje znovu** a nové nástroje jsou v menu, nic se nekopíruje ani nepřepisuje.
+
+Šablona už vkládá `C:/Projects/MojeAplikace/Windchill/dvojpanel_nastroje.json`, takže nový `nastroje.json` ho má sám. Když je projekt jinde (nebo starší `nastroje.json` odkaz nemá), nahoře v menu Nástroje je ⚠ a stačí **Nástroje → Přidat nástroje projektu…**: vybereš `dvojpanel_nastroje.json` a program ho zapíše do `"vlozit"` sám, zbytek souboru nechá. Ručně to vypadá takto:
 
 ```json
 {
@@ -137,6 +157,7 @@ Jeden nástroj:
 | Klíč | Povinný | Význam |
 |---|---|---|
 | `nazev` | ano | text v menu |
+| `popis` | ne | vysvětlení pro nápovědu (F1 → Moje nástroje) |
 | `skript` | ano | cesta ke skriptu (`.py`, `.bat`, `.cmd`, `.exe`); relativní cesta je vůči složce programu (ve vloženém souboru vůči jeho složce) |
 | `argumenty` | ne | seznam argumentů, může obsahovat zástupné symboly |
 | `pripony` | ne | povolené přípony souborů z panelů (`{soubory}`, `{soubor}`, `{soubor_cil}`) a filtr dialogů `{vybrat_soubor}` bez vlastních přípon, např. `[".xlsx"]` |
@@ -199,11 +220,11 @@ Náhled s jiným kódem (chyba) nic nezapíše a na nic se neptá. Když skript 
 ### Pravidla pro skripty
 
 - Výstup (`print`) i chyby se zobrazují v dolním panelu. Výstup je v UTF-8.
-- Skript nesmí čekat na `input()`. Vstup je zavřený, takže `input()` skončí chybou místo zamrznutí. Hodnoty předávej argumenty nebo přes `{zadat:...}`.
+- Skript se může ptát přes `input()` (nebo `.bat` přes `set /p`, `pause`): když jeho výpis skončí nedokončeným řádkem, který končí `:`, `?`, `]` nebo `>` (nebo výzvou „libovolné klávesy“), a 0,3 s se nic neděje, Dvojpanel otevře okno pro zadání. V okně je, co nástroj vypsal (např. nabídka voleb), otázka a pole. Enter odešle (i prázdné), Esc vstup zavře a `input()` skončí chybou `EOFError`. Do logu se zapíše otázka i odpověď. Vložený víceřádkový text odpoví na víc otázek za sebou. Hodnoty známé předem je pořád pohodlnější předat argumenty nebo `{zadat:...}`.
 - Návratový kód 0 znamená úspěch, cokoli jiného chybu.
 - Běží vždy jen jeden nástroj; zastavit ho lze v menu Nástroje.
 - Řádky začínající `DVOJPANEL:` jsou zprávy pro program a ve výstupu se nezobrazují (zatím `DVOJPANEL:BEZ_ZMEN`, viz Náhled a potvrzení).
-- Nástroj dostane proměnnou prostředí `DVOJPANEL` (verze programu), podle které pozná, že běží z Dvojpanelu. Např. `.bat`, který po dvojkliku čeká (`pause`/`timeout`), může čekání přeskočit: `if defined DVOJPANEL exit /b 0`. Jinak `timeout` vypíše „Input redirection is not supported“ (vstup je zavřený) a skončí, výsledek nástroje to neovlivní.
+- Nástroj dostane proměnnou prostředí `DVOJPANEL` (verze programu), podle které pozná, že běží z Dvojpanelu. Např. `.bat`, který po dvojkliku čeká (`pause`/`timeout`), může čekání přeskočit: `if defined DVOJPANEL exit /b 0`. Jinak `pause` otevře okno pro zadání (stačí Enter) a `timeout` vypíše „Input redirection is not supported“ a skončí, výsledek nástroje to neovlivní.
 
 ## Testy
 
@@ -211,7 +232,7 @@ Náhled s jiným kódem (chyba) nic nezapíše a na nic se neptá. Když skript 
 python tests\spustit_testy.py
 ```
 
-Automatický test celého programu přes skutečné okno (klávesy, myš, dialogy podvržené), asi 5 minut. Program se zkopíruje do dočasné složky, takže lokální `nastroje.json`, `oblibene.json` ani `dvojpanel.json` se nezmění. Projekt Windchill (`C:\Projects\MojeAplikace\Windchill`, jinde proměnná `DP_WINDCHILL`) se jen čte. Návratový kód 0 = vše prošlo. Potřebuje Windows s displejem.
+Automatický test celého programu přes skutečné okno (klávesy, myš, dialogy podvržené), asi 5 minut. Program se zkopíruje do dočasné složky, takže lokální `nastroje.json`, `oblibene.json` ani `dvojpanel.json` se nezmění. Projekt Windchill (`C:\Projects\MojeAplikace\Windchill`, jinde proměnná `DP_WINDCHILL`; má-li `dvojpanel_nastroje.json` jen v podsložce `windchill-index`, použije se ta a `.venv` o úroveň výš) se jen čte. Návratový kód 0 = vše prošlo. Potřebuje Windows s displejem.
 
 ## Licence
 

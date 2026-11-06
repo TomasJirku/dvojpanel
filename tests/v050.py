@@ -7,7 +7,7 @@ SAP_PANES = "Aktualizovat podle SAP (přehled pod kurzorem, export ve druhém pa
 
 def v050():
     """0.5.0 {soubor_cil} + real aktualizuj_ze_sap.py"""
-    wc_py = os.path.join(WC_SRC, ".venv", "Scripts", "python.exe")
+    wc_py = os.path.join(WC_VENV, "Scripts", "python.exe")
     work = os.path.join(ENV, "sap")
     target_dir, sap_dir = os.path.join(work, "prehled"), os.path.join(work, "export")
     os.makedirs(target_dir); os.makedirs(sap_dir)
@@ -35,7 +35,7 @@ wb.save(r"{sapx}")
     if os.path.exists(os.path.join(WC_SRC, "cesty.py")):  # imported by aktualizuj_ze_sap.py since 1.19.0
         shutil.copy(os.path.join(WC_SRC, "cesty.py"), wc)
     site = glob.glob(os.path.join(wc, ".venv", "Lib", "site-packages"))[0]
-    write(os.path.join(site, "windchill_libs.pth"), os.path.join(WC_SRC, ".venv", "Lib", "site-packages") + "\n")
+    write(os.path.join(site, "windchill_libs.pth"), os.path.join(WC_VENV, "Lib", "site-packages") + "\n")
     shutil.copyfile(dp.CONFIG_EXAMPLE, dp.CONFIG_FILE)
     write(os.path.join(SCRIPTS, "echo_args.py"), open(os.path.join(SCRIPTS, "echo_args.py"), encoding="utf-8").read())
     cfg = json.loads(dp.CONFIG_FILE.read_text(encoding="utf-8"))

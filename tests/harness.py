@@ -3,6 +3,8 @@
 Usage: python harness.py <program_dir> <env_dir>
 Needs Windows with a display. Read-only use of the Windchill project (DP_WINDCHILL, default
 C:\\Projects\\MojeAplikace\\Windchill): its .bat, scripts and dvojpanel_nastroje.json are copied.
+A git checkout in its subfolder windchill-index is used when the tool file is only there; the .venv
+(WC_VENV) may be in the project folder or one level up.
 """
 import ast
 import json
@@ -46,6 +48,11 @@ VER = Ver(os.environ.get("VER") or program_version())
 WC_SRC = os.environ.get("DP_WINDCHILL", r"C:\Projects\MojeAplikace\Windchill")
 if not os.path.isdir(WC_SRC):
     sys.exit(f"Windchill project not found: {WC_SRC} (set DP_WINDCHILL)")
+if not os.path.exists(os.path.join(WC_SRC, "dvojpanel_nastroje.json")) \
+        and os.path.exists(os.path.join(WC_SRC, "windchill-index", "dvojpanel_nastroje.json")):
+    WC_SRC = os.path.join(WC_SRC, "windchill-index")  # the git checkout inside the working folder
+WC_VENV = next((v for v in (os.path.join(WC_SRC, ".venv"), os.path.join(os.path.dirname(WC_SRC), ".venv"))
+                if os.path.exists(os.path.join(v, "Scripts", "python.exe"))), os.path.join(WC_SRC, ".venv"))
 if os.path.exists(ENV):
     shutil.rmtree(ENV)
 HOME = os.path.join(ENV, "home")
@@ -130,6 +137,19 @@ for kind, default in [("showerror", "ok"), ("showinfo", "ok"), ("showwarning", "
                       ("askokcancel", True), ("askyesno", True), ("askyesnocancel", None)]:
     setattr(messagebox, kind, stub(kind, default))
 simpledialog.askstring = stub("askstring", None)
+for _name in ("ask_conflict", "ask_tool_input"):  # own dialogs since 0.8
+    if hasattr(dp, _name):
+        setattr(dp, _name, stub(_name, None))
+
+
+def conflict(answer):
+    """Answer to the 'already exists' question: True = overwrite, False = skip, None = cancel."""
+    if VER < "0.8":
+        return answer
+    return {True: "all", False: "skip", None: None}[answer]
+
+
+CONFLICT = "askyesnocancel" if VER < "0.8" else "ask_conflict"
 
 launched = []
 real_popen = subprocess.Popen
@@ -231,10 +251,13 @@ def startup():
     tlabels = [tm.entrycget(i, "label") for i in range(tm.index("end") + 1) if tm.type(i) == "command"]
     exp = [t["nazev"] for t in app.tools if not t.get("skupina")] + ["Upravit nastroje.json", "Načíst nástroje znovu",
                                              "Zastavit běžící nástroj", "Vymazat výstup"]
+    if VER >= "0.8":
+        exp[-2:-2] = ["Přidat nástroje projektu…"]
+        exp.append("Nápověda k nástrojům")
     check("Nástroje menu entries", tlabels == exp, tlabels)
     reset()
     help_menu = app.nametowidget(menubar.entrycget(menubar.index("Nápověda"), "menu"))
-    help_menu.invoke(0)
+    help_menu.invoke(help_menu.index("O programu"))
     check("O programu shows version", calls and f"Dvojpanel {VER}" in calls[0][1][1], calls)
     reset()
     tm.invoke(tm.index("Upravit nastroje.json"))
@@ -474,20 +497,20 @@ def copy_move():
 
     write(os.path.join(L, "a.txt"), "NEW")
     select(app.left, "a.txt")
-    reset(True, None)
+    reset(True, conflict(None))
     key(lt, "<F5>")
     check("conflict -> asks; Storno does nothing",
-          kinds() == ["askokcancel", "askyesnocancel"] and open(os.path.join(R, "a.txt")).read() == "x" * 10, calls)
-    reset(True, False)
+          kinds() == ["askokcancel", CONFLICT] and open(os.path.join(R, "a.txt")).read() == "x" * 10, calls)
+    reset(True, conflict(False))
     key(lt, "<F5>"); wait_job()
     check("conflict Ne = skip", open(os.path.join(R, "a.txt")).read() == "x" * 10)
-    reset(True, True)
+    reset(True, conflict(True))
     key(lt, "<F5>"); wait_job()
     check("conflict Ano = overwrite", open(os.path.join(R, "a.txt")).read() == "NEW")
 
     os.makedirs(os.path.join(R, "b.txt"))
     select(app.left, "b.txt")
-    reset(True, True)
+    reset(True, conflict(True))
     key(lt, "<F5>"); wait_job()
     check("overwrite file onto folder -> error shown, nothing lost",
           "showerror" in kinds() and os.path.isdir(os.path.join(R, "b.txt"))
@@ -520,10 +543,10 @@ def copy_move():
     os.makedirs(os.path.join(R, "m")); write(os.path.join(R, "m", "2.txt"), "2")
     app.left.reload()
     select(app.left, "m")
-    reset(True, False)
+    reset(True, conflict(False))
     key(lt, "<F6>"); wait_job()
     check("F6 conflict skip keeps source", os.path.isfile(os.path.join(L, "m", "1.txt")))
-    reset(True, True)
+    reset(True, conflict(True))
     key(lt, "<F6>"); wait_job()
     check("F6 conflict overwrite merges folders and removes source",
           sorted(os.listdir(os.path.join(R, "m"))) == ["1.txt", "2.txt"] and not os.path.exists(os.path.join(L, "m")))
@@ -932,6 +955,8 @@ if VER >= "0.6":
     exec(open(os.path.join(os.path.dirname(__file__), 'v060.py'), encoding='utf-8').read())
 if VER >= "0.7":
     exec(open(os.path.join(os.path.dirname(__file__), 'v070.py'), encoding='utf-8').read())
+if VER >= "0.8":
+    exec(open(os.path.join(os.path.dirname(__file__), 'v080.py'), encoding='utf-8').read())
 section(shutdown)
 
 
