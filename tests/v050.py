@@ -32,8 +32,9 @@ wb.save(r"{sapx}")
     # example config paths: %USERPROFILE%/Skripty/windchill/{aktualizuj_ze_sap.py,.venv}
     wc = os.path.join(HOME, "Skripty", "windchill")
     shutil.copy(os.path.join(WC_SRC, "aktualizuj_ze_sap.py"), wc)
-    if os.path.exists(os.path.join(WC_SRC, "cesty.py")):  # imported by aktualizuj_ze_sap.py since 1.19.0
-        shutil.copy(os.path.join(WC_SRC, "cesty.py"), wc)
+    for n in ("cesty.py", "sloupce_prehledu.py"):  # modules aktualizuj_ze_sap.py imports in newer versions
+        if os.path.exists(os.path.join(WC_SRC, n)):
+            shutil.copy(os.path.join(WC_SRC, n), wc)
     site = glob.glob(os.path.join(wc, ".venv", "Lib", "site-packages"))[0]
     write(os.path.join(site, "windchill_libs.pth"), os.path.join(WC_VENV, "Lib", "site-packages") + "\n")
     shutil.copyfile(dp.CONFIG_EXAMPLE, dp.CONFIG_FILE)

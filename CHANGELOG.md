@@ -1,5 +1,27 @@
 # Changelog
 
+## 0.10.0 – 2026-11-11
+- **Jazyk programu**: Soubor → **Jazyk / Language** přepne čeština / English / Deutsch / Polski – menu, tlačítka,
+  hlášky, okno porovnání i celou nápovědu (F1). Změna platí hned a uloží se do `dvojpanel.json` jako
+  `"jazyk"` (`cs`, `en`, `de`, `pl`; výchozí `cs`).
+- Překlady jsou v novém souboru `preklady.json` vedle programu (patří do release ZIPu). Když chybí nebo je
+  poškozený, program to ohlásí a zůstane česky.
+- Česky zůstávají klíče v `nastroje.json` a názvy / popisy nástrojů, jak jsou v něm zapsané; systémová okna
+  jsou v jazyce Windows.
+- Testy: `tests\v100.py` hlídá, že každý text programu má překlad ve všech jazycích se stejnými zástupnými
+  symboly a že přeložená nápověda má stejnou stavbu jako česká.
+
+## 0.9.0 – 2026-11-10
+- Příkazy → **Git pull v aktuální složce** (Ctrl+G): spustí `git pull --ff-only` v repozitáři, do kterého patří
+  složka aktivního panelu (i z podsložky). Výpis je v dolním panelu, po úspěchu se obnoví panely a načtou
+  nástroje. Vlastní commity a změny git nepřepíše, skončí chybou. Po aktualizaci samotného Dvojpanelu program
+  připomene nové spuštění. Složku mimo repozitář a chybějící git ohlásí.
+- **Velikost písma**: `"velikost_pisma"` v `dvojpanel.json` (6 až 24 bodů, výchozí 9) pro panely, menu,
+  tlačítka, výstup nástrojů i nápovědu; výška řádků se přizpůsobí. Ctrl++ / Ctrl+- / Ctrl+0 (také menu Soubor)
+  ji změní hned a uloží.
+- Testy: skript Windchillu `aktualizuj_ze_sap.py` od 1.26.0 potřebuje `sloupce_prehledu.py` a sloupce
+  `MM/PP` a `Mat. Name` v exportu SAP.
+
 ## 0.8.0 – 2026-11-06
 - Sloupec **Typ** v panelech: druh souboru, jak ho pojmenují Windows (např. „List Microsoft Excelu“), složky
   „Složka“; lze podle něj řadit.

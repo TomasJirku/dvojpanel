@@ -174,12 +174,20 @@ from openpyxl import Workbook
 wb = Workbook(); ws = wb.active
 ws.append(["Pozice", "ZF #", "Customer #"]); ws.append([1, "R000W600A", "5B60000-01"]); wb.save(r"{target}")
 wb = Workbook(); ws = wb.active
-ws.append(["Indices", "Customer Part Number", "AUSP22"]); ws.append(["R000W600A", "5B60000-01", ""]); wb.save(r"{sapx}")
+ws.append(["Indices", "Customer Part Number", "AUSP22", "MM/PP", "Mat. Name"])
+ws.append(["R000W600A", "5B60000-01", "", "PD", "Retractor"]); wb.save(r"{sapx}")
 """], check=True)
     shutil.copyfile(dp.CONFIG_EXAMPLE, dp.CONFIG_FILE)
     app.reload_tools()
-    for n in ("aktualizuj_ze_sap.py", "cesty.py"):
-        shutil.copy(os.path.join(WC_SRC, n), wc)
+    for n in ("aktualizuj_ze_sap.py", "cesty.py", "sloupce_prehledu.py"):
+        if os.path.exists(os.path.join(WC_SRC, n)):
+            shutil.copy(os.path.join(WC_SRC, n), wc)
+    # newer versions of the script first bring the overview's columns to their template: do it once here,
+    # so that the run through Dvojpanel really has nothing to change
+    subprocess.run([wc_py, os.path.join(wc, "aktualizuj_ze_sap.py"), target, sapx], cwd=wc, capture_output=True)
+    for n in os.listdir(same):
+        if "zaloha" in n:
+            os.remove(os.path.join(same, n))
     app.left.load(same); app.right.load(same)
     app.left.tree.focus(target); app.right.tree.focus(sapx)
     app.set_active(app.left)

@@ -16,11 +16,14 @@ Ovládání:
   F9 nástroje (vlastní skripty z nastroje.json)
   Přetažení myší do druhého panelu nebo na složku = kopírovat, se Shiftem přesunout
   Ctrl+D oblíbené složky   Ctrl+S porovnat a synchronizovat složky   Ctrl+U prohodit panely
+  Ctrl+G git pull ve složce aktivního panelu
+  Ctrl++ / Ctrl+- větší / menší písmo, Ctrl+0 výchozí (dvojpanel.json: velikost_pisma)
   Esc přerušit kopírování   Ctrl+R obnovit   Ctrl+Q konec
   Klik na záhlaví sloupce = řazení (▲ / ▼ ukazuje sloupec a směr)
   F1 nápověda (také vysvětlení všech nástrojů)
+  Soubor → Jazyk / Language: čeština, English, Deutsch, Polski (dvojpanel.json: jazyk)
 """
-__version__ = "0.8.0"
+__version__ = "0.10.0"
 
 import codecs
 import json
@@ -37,6 +40,7 @@ from datetime import datetime
 from pathlib import Path
 import tkinter as tk
 from tkinter import ttk, messagebox, simpledialog, filedialog
+from tkinter import font as tkfont
 
 IS_WINDOWS = sys.platform == "win32"
 UP = ".."
@@ -46,6 +50,8 @@ CONFIG_EXAMPLE = APP_DIR / "nastroje.example.json"
 FAVORITES_FILE = APP_DIR / "oblibene.json"
 SETTINGS_FILE = APP_DIR / "dvojpanel.json"
 ICON_FILE = APP_DIR / "dvojpanel.ico"
+LANG_FILE = APP_DIR / "preklady.json"  # translations of the Czech texts written in this file
+LANGUAGES = {"cs": "Čeština", "en": "English", "de": "Deutsch", "pl": "Polski"}
 PLACEHOLDER = re.compile(r"\{(\w+)(?::([^}]*))?\}")
 CHUNK = 1024 * 1024
 BIG_FILE = 16 * 1024 * 1024  # files from this size up report progress in percent
@@ -54,7 +60,51 @@ MARK_COLOR = "#c8102e"
 DROP_COLOR = "#cfe3ff"
 DRAG_THRESHOLD = 6  # pixels the mouse must travel before a press becomes a drag
 RENAME_DELAY = 600  # ms; a slow second click on the name starts renaming (like Explorer)
+DEFAULT_FONT_SIZE = 9  # points, the size Tk uses on Windows; "velikost_pisma" in dvojpanel.json changes it
+FONT_SIZE_MIN, FONT_SIZE_MAX = 6, 24
+NAMED_FONTS = ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont",
+               "TkSmallCaptionFont", "TkIconFont", "TkTooltipFont", "TkFixedFont")
+font_delta = 0  # chosen size minus the default one; set by App.apply_font_size
+GIT_PULL = {"nazev": "Git pull"}  # built-in command (Ctrl+G) that runs and logs like a tool
 INVALID_NAME_CHARS = '<>:"/\\|?*' if sys.platform == "win32" else "/"
+
+
+# ---------------------------------------------------------------- language
+
+language = "cs"
+_texts = {}  # Czech text -> the same text in the chosen language
+_help = {}  # Czech title of a help topic -> (title, text) in the chosen language
+
+
+def tr(text):
+    """The Czech text in the chosen language; Czech itself and anything untranslated stays as written."""
+    return _texts.get(text, text)
+
+
+def tr_mark(text):
+    """Marks a text defined at import time; it is translated with tr() where it is used."""
+    return text
+
+
+def set_language(code):
+    """Load the texts of a language from preklady.json. Returns an error message or None; on an error
+    the program stays Czech."""
+    global language, _texts, _help
+    language, _texts, _help = "cs", {}, {}
+    _TYPE_NAMES.clear()  # "Soubor XYZ" is a translated text
+    if code == "cs":
+        return None
+    try:
+        data = json.loads(LANG_FILE.read_text(encoding="utf-8-sig"))
+        index = data["jazyky"].index(code)
+        texts = {cs: variants[index] for cs, variants in data["texty"].items()}
+        topics = {cs: (variants[code][0], "\n".join(variants[code][1:]))
+                  for cs, variants in data["napoveda"].items()}
+    except (OSError, ValueError, LookupError, TypeError, AttributeError) as e:
+        return (f"Překlad „{LANGUAGES.get(code, code)}“ nelze načíst ze souboru {LANG_FILE.name}, "
+                f"program zůstává česky:\n{e}")
+    language, _texts, _help = code, texts, topics
+    return None
 
 
 # ---------------------------------------------------------------- helpers
@@ -101,10 +151,10 @@ def shell_type_name(ext):
 def file_type(name, is_dir):
     """Text of the Typ column: "Složka", the Windows type name, or "Soubor XLSX" as a fallback."""
     if is_dir:
-        return "Složka"
+        return tr("Složka")
     ext = os.path.splitext(name)[1].lower()
     if ext not in _TYPE_NAMES:
-        _TYPE_NAMES[ext] = shell_type_name(ext) or (f"Soubor {ext[1:].upper()}" if ext else "Soubor")
+        _TYPE_NAMES[ext] = shell_type_name(ext) or (tr("Soubor {0}").format(ext[1:].upper()) if ext else tr("Soubor"))
     return _TYPE_NAMES[ext]
 
 
@@ -127,15 +177,15 @@ def is_inside(child, parent):
 def rename_error(folder, old, new):
     """Why `old` in `folder` cannot be renamed to `new`, or None. Never allows overwriting."""
     if not new.strip() or new in (".", ".."):
-        return "Název nesmí být prázdný."
+        return tr("Název nesmí být prázdný.")
     bad = sorted({c for c in new if c in INVALID_NAME_CHARS})
     if bad:
-        return f"Název nesmí obsahovat znaky: {' '.join(bad)}"
+        return tr("Název nesmí obsahovat znaky: {0}").format(' '.join(bad))
     if IS_WINDOWS and new != new.rstrip(" ."):
-        return "Název nesmí končit mezerou ani tečkou."
+        return tr("Název nesmí končit mezerou ani tečkou.")
     # a change of letter case only (a.txt -> A.txt) is the same file on Windows, not a collision
     if os.path.normcase(new) != os.path.normcase(old) and os.path.lexists(os.path.join(folder, new)):
-        return f"Položka s tímto názvem už existuje:\n{new}"
+        return tr("Položka s tímto názvem už existuje:\n{0}").format(new)
     return None
 
 
@@ -149,6 +199,39 @@ def is_network_path(path):
     return ctypes.windll.kernel32.GetDriveTypeW(root) == 4  # DRIVE_REMOTE
 
 
+def scaled(size):
+    """A font size written for the default setting, moved by the user's choice."""
+    return size + font_delta
+
+
+def find_git_root(path):
+    """The folder with .git (a folder, or a file in worktrees and submodules) at or above path, or None."""
+    path = os.path.abspath(path)
+    while True:
+        if os.path.exists(os.path.join(path, ".git")):
+            return path
+        parent = os.path.dirname(path)
+        if parent == path:
+            return None
+        path = parent
+
+
+def file_version(path):
+    """__version__ written in a Python file, or None."""
+    try:
+        match = re.search(r'^__version__ = "([^"]+)"', Path(path).read_text(encoding="utf-8"), re.M)
+    except (OSError, ValueError):
+        return None
+    return match.group(1) if match else None
+
+
+def same_folder(a, b):
+    try:
+        return os.path.samefile(a, b)
+    except OSError:
+        return False
+
+
 def remove_path(path):
     if os.path.isdir(path) and not os.path.islink(path):
         shutil.rmtree(path)
@@ -159,7 +242,7 @@ def remove_path(path):
 def send_to_recycle_bin(paths):
     """Delete through the Windows shell so items land in the Recycle Bin."""
     if not IS_WINDOWS:
-        raise OSError("Koš je podporován jen ve Windows.")
+        raise OSError(tr("Koš je podporován jen ve Windows."))
     import ctypes
     from ctypes import wintypes
 
@@ -188,7 +271,7 @@ def send_to_recycle_bin(paths):
     op.fFlags = FOF_SILENT | FOF_NOCONFIRMATION | FOF_ALLOWUNDO | FOF_NOERRORUI
     result = ctypes.windll.shell32.SHFileOperationW(ctypes.byref(op))
     if result != 0:
-        raise OSError(f"Mazání selhalo (kód {result:#x}).")
+        raise OSError(tr("Mazání selhalo (kód {0:#x}).").format(result))
 
 
 class Cancelled(Exception):
@@ -289,9 +372,9 @@ def create_shortcut(folder):
                                 capture_output=True, text=True, errors="replace", timeout=60,
                                 creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
     except (OSError, subprocess.TimeoutExpired) as e:
-        raise OSError(f"Nelze spustit PowerShell: {e}") from e
+        raise OSError(tr("Nelze spustit PowerShell: {0}").format(e)) from e
     if result.returncode != 0 or not lnk.exists():
-        raise OSError(result.stderr.strip() or "PowerShell zástupce nevytvořil.")
+        raise OSError(result.stderr.strip() or tr("PowerShell zástupce nevytvořil."))
     return lnk
 
 
@@ -336,7 +419,7 @@ def transfer_worker(sources, dest, move, overwrite, cancel, report):
     OVERWRITE_ALL, OVERWRITE_OLDER (only files older than the source are replaced, also inside merged
     folders) or OVERWRITE_SKIP. A file that is not copied always stays in the source, also when moving."""
     errors = []
-    verb = "Přesouvám" if move else "Kopíruji"
+    verb = tr("Přesouvám") if move else tr("Kopíruji")
     for i, src in enumerate(sources, 1):
         name = os.path.basename(src)
         target = os.path.join(dest, name)
@@ -357,7 +440,7 @@ def transfer_worker(sources, dest, move, overwrite, cancel, report):
             if exists and overwrite == OVERWRITE_SKIP:
                 continue
             if exists and os.path.isdir(src) != os.path.isdir(target):
-                errors.append(f"{name}: v cíli existuje položka jiného typu")
+                errors.append(tr("{0}: v cíli existuje položka jiného typu").format(name))
                 continue
             if move and not exists:
                 shutil.move(src, target, copy_function=copier)
@@ -373,7 +456,7 @@ def transfer_worker(sources, dest, move, overwrite, cancel, report):
                 else:
                     remove_path(src)
         except Cancelled:
-            errors.append("Přerušeno uživatelem.")
+            errors.append(tr("Přerušeno uživatelem."))
             break
         except OSError as e:
             errors.append(f"{name}: {e}")
@@ -399,7 +482,7 @@ def remove_copied(src, kept):
 
 
 def delete_worker(paths, report):
-    report(f"Mažu {len(paths)} položek…")
+    report(tr("Mažu {0} položek…").format(len(paths)))
     send_to_recycle_bin(paths)
     return []
 
@@ -441,9 +524,9 @@ def scan_tree(root, recursive, cancel):
 def compare_worker(left, right, recursive, binary, cancel, report):
     """Compare two folders. Returns (rows, errors); a row is a dict with rel, status, left, right, action
     where left/right are (is_dir, size, mtime) or None."""
-    report("Načítám levou složku…")
+    report(tr("Načítám levou složku…"))
     lmap, errors = scan_tree(left, recursive, cancel)
-    report("Načítám pravou složku…")
+    report(tr("Načítám pravou složku…"))
     rmap, rerrors = scan_tree(right, recursive, cancel)
     errors += rerrors
 
@@ -476,12 +559,12 @@ def compare_worker(left, right, recursive, binary, cancel, report):
         elif l[1] != r[1]:
             status, action = TYPE_CONFLICT, NO_ACTION
         else:
-            report(f"Porovnávám {n}/{len(keys)}: {rel}")
+            report(tr("Porovnávám {0}/{1}: {2}").format(n, len(keys), rel))
             if l[2] != r[2]:
                 same = False
             elif binary:
                 def progress(done, total, rel=rel, n=n):
-                    report(f"Porovnávám {n}/{len(keys)}: {rel} – {done * 100 // total} %", done * 100 / total)
+                    report(tr("Porovnávám {0}/{1}: {2} – {3} %").format(n, len(keys), rel, done * 100 // total), done * 100 / total)
                 try:
                     same = files_equal(os.path.join(left, l[0]), os.path.join(right, r[0]), cancel, progress)
                 except OSError as e:
@@ -508,7 +591,7 @@ def sync_worker(left, right, rows, cancel, report):
     for i, row in enumerate(todo, 1):
         src_root, dst_root = (left, right) if row["action"] == TO_RIGHT else (right, left)
         src, dst = os.path.join(src_root, row["rel"]), os.path.join(dst_root, row["rel"])
-        label = f"Synchronizuji {i}/{len(todo)}"
+        label = tr("Synchronizuji {0}/{1}").format(i, len(todo))
         report(f"{label}: {row['rel']}")
         copier = progress_copier(label, report, cancel)
         try:
@@ -520,7 +603,7 @@ def sync_worker(left, right, rows, cancel, report):
             else:
                 copier(src, dst)
         except Cancelled:
-            errors.append("Přerušeno uživatelem.")
+            errors.append(tr("Přerušeno uživatelem."))
             break
         except OSError as e:
             errors.append(f"{row['rel']}: {e}")
@@ -536,11 +619,11 @@ def load_favorites():
     try:
         data = json.loads(FAVORITES_FILE.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as e:
-        return [], f"Chyba v oblibene.json: {e}"
+        return [], tr("Chyba v oblibene.json: {0}").format(e)
     favorites = data.get("oblibene", []) if isinstance(data, dict) else []
     for i, fav in enumerate(favorites, 1):
         if not isinstance(fav, dict) or not fav.get("cesta"):
-            return [], f"oblibene.json: položka č. {i} musí mít 'cesta'."
+            return [], tr("oblibene.json: položka č. {0} musí mít 'cesta'.").format(i)
     return favorites, None
 
 
@@ -556,7 +639,8 @@ def write_json(path, data):
 
 # ---------------------------------------------------------------- settings (dvojpanel.json)
 
-SETTINGS_DEFAULTS = {"levy_panel": "%USERPROFILE%", "pravy_panel": "%USERPROFILE%", "lista_oblibenych": True}
+SETTINGS_DEFAULTS = {"levy_panel": "%USERPROFILE%", "pravy_panel": "%USERPROFILE%", "lista_oblibenych": True,
+                     "velikost_pisma": DEFAULT_FONT_SIZE, "jazyk": "cs"}
 
 
 def load_settings():
@@ -567,14 +651,21 @@ def load_settings():
     try:
         data = json.loads(SETTINGS_FILE.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as e:
-        return settings, f"Chyba v dvojpanel.json: {e}"
+        return settings, tr("Chyba v dvojpanel.json: {0}").format(e)
     if not isinstance(data, dict):
-        return settings, "dvojpanel.json musí obsahovat objekt { … }."
+        return settings, tr("dvojpanel.json musí obsahovat objekt { … }.")
     for key in ("levy_panel", "pravy_panel"):
         if key in data and not (isinstance(data[key], str) and data[key].strip()):
-            return settings, f"dvojpanel.json: '{key}' musí být cesta ke složce."
+            return settings, tr("dvojpanel.json: '{0}' musí být cesta ke složce.").format(key)
     if "lista_oblibenych" in data and not isinstance(data["lista_oblibenych"], bool):
-        return settings, "dvojpanel.json: 'lista_oblibenych' musí být true nebo false."
+        return settings, tr("dvojpanel.json: 'lista_oblibenych' musí být true nebo false.")
+    size = data.get("velikost_pisma", DEFAULT_FONT_SIZE)
+    if isinstance(size, bool) or not isinstance(size, int) or not FONT_SIZE_MIN <= size <= FONT_SIZE_MAX:
+        return settings, (tr("dvojpanel.json: 'velikost_pisma' musí být celé číslo {0} až {1} "
+                             "(výchozí je {2}).").format(FONT_SIZE_MIN, FONT_SIZE_MAX, DEFAULT_FONT_SIZE))
+    if data.get("jazyk", "cs") not in LANGUAGES:
+        return settings, tr("dvojpanel.json: 'jazyk' musí být jedna z hodnot: {0}.").format(
+            ", ".join(f'"{code}"' for code in LANGUAGES))
     settings.update(data)
     return settings, None
 
@@ -586,7 +677,7 @@ def save_setting(key, value):
     except ValueError:
         data = None
     if not isinstance(data, dict):  # never overwrite a file the user has to fix by hand
-        raise OSError("dvojpanel.json obsahuje chybu, oprav ho nejdřív ručně.")
+        raise OSError(tr("dvojpanel.json obsahuje chybu, oprav ho nejdřív ručně."))
     data[key] = value
     write_json(SETTINGS_FILE, data)
 
@@ -626,13 +717,13 @@ def load_tools():
         try:
             shutil.copyfile(CONFIG_EXAMPLE, CONFIG_FILE)
         except OSError as e:
-            return [], f"Nelze vytvořit nastroje.json: {e}"
+            return [], tr("Nelze vytvořit nastroje.json: {0}").format(e)
     if not CONFIG_FILE.exists():
-        return [], "Chybí soubor nastroje.json."
+        return [], tr("Chybí soubor nastroje.json.")
     try:
         data = json.loads(CONFIG_FILE.read_text(encoding="utf-8-sig"))
     except (OSError, ValueError) as e:
-        return [], f"Chyba v nastroje.json: {e}"
+        return [], tr("Chyba v nastroje.json: {0}").format(e)
     try:
         tools = parse_tools(data, "nastroje.json", APP_DIR)
     except ValueError as e:
@@ -649,13 +740,13 @@ def load_tools():
         try:
             inc = json.loads(Path(path).read_text(encoding="utf-8-sig"))
             if isinstance(inc, dict) and "vlozit" in inc:
-                raise ValueError("vložený soubor nesmí dál vkládat ('vlozit')")
+                raise ValueError(tr("vložený soubor nesmí dál vkládat ('vlozit')"))
             tools += parse_tools(inc, os.path.basename(path), os.path.dirname(path))
         except FileNotFoundError:
-            errors.append(f"Vložený soubor nástrojů neexistuje:\n{path}\n"
-                          "Oprava: Nástroje → Přidat nástroje projektu… a vyber jeho dvojpanel_nastroje.json.")
+            errors.append(tr("Vložený soubor nástrojů neexistuje:\n{0}\nOprava: Nástroje → Přidat "
+                             "nástroje projektu… a vyber jeho dvojpanel_nastroje.json.").format(path))
         except (OSError, ValueError) as e:
-            errors.append(f"Chyba ve vloženém souboru nástrojů {path}:\n{e}")
+            errors.append(tr("Chyba ve vloženém souboru nástrojů {0}:\n{1}").format(path, e))
     return tools, "\n\n".join(errors) or None
 
 
@@ -664,12 +755,12 @@ def parse_tools(data, source, base):
     a file-level "skupina" is the default group of its tools."""
     tools = data.get("nastroje", []) if isinstance(data, dict) else []
     if not isinstance(tools, list):
-        raise ValueError(f"{source}: 'nastroje' musí být seznam.")
+        raise ValueError(tr("{0}: 'nastroje' musí být seznam.").format(source))
     group = data.get("skupina") if isinstance(data, dict) else None
     result = []
     for i, tool in enumerate(tools, 1):
         if not isinstance(tool, dict) or not tool.get("nazev") or not tool.get("skript"):
-            raise ValueError(f"{source}: nástroj č. {i} musí mít 'nazev' a 'skript'.")
+            raise ValueError(tr("{0}: nástroj č. {1} musí mít 'nazev' a 'skript'.").format(source, i))
         tool = dict(tool, _zaklad=str(base))
         if group and not tool.get("skupina"):
             tool["skupina"] = group
@@ -685,8 +776,8 @@ def preview_args(tool):
     return [value] if isinstance(value, str) else [str(v) for v in value]
 
 
-EMPTY_PLACEHOLDER = {"soubor": "Pod kurzorem v aktivním panelu není soubor.",
-                     "soubor_cil": "Pod kurzorem ve druhém panelu není soubor."}
+EMPTY_PLACEHOLDER = {"soubor": tr_mark("Pod kurzorem v aktivním panelu není soubor."),
+                     "soubor_cil": tr_mark("Pod kurzorem ve druhém panelu není soubor.")}
 
 
 PROTOCOL_PREFIX = "DVOJPANEL:"  # output lines a tool addresses to Dvojpanel (not shown in the log)
@@ -695,7 +786,8 @@ PROMPT_END = re.compile(r"[:?>\]]\s*$")  # "Volba [1]: ", "Pokračovat? ", "C:\>
 PAUSE_TEXT = re.compile(r"libovoln|any key", re.IGNORECASE)  # cmd's pause: "…libovolné klávesy…"
 PREVIEW_OK = (0, 2)  # preview exit codes that still allow the real run (2 = needs attention)
 
-FILE_PROMPTS = {"vybrat_soubor": ("open", "Vyber soubor"), "ulozit_soubor": ("save", "Uložit jako")}
+FILE_PROMPTS = {"vybrat_soubor": ("open", tr_mark("Vyber soubor")),
+                "ulozit_soubor": ("save", tr_mark("Uložit jako"))}
 
 
 def parse_file_prompt(label, default_label, tool_exts):
@@ -725,7 +817,7 @@ def build_command(tool, ctx, ask, pick=None, answers=None, extra=()):
     """
     script = tool_path(tool, tool["skript"])
     if not os.path.isfile(script):
-        raise ValueError(f"Skript neexistuje:\n{script}")
+        raise ValueError(tr("Skript neexistuje:\n{0}").format(script))
     ctx = dict(ctx, skript_slozka=os.path.dirname(script))
     if answers is None:
         answers = {}
@@ -734,7 +826,7 @@ def build_command(tool, ctx, ask, pick=None, answers=None, extra=()):
         def repl(m):
             name, label = m.group(1), m.group(2)
             if name == "zadat":
-                label = label or "Hodnota"
+                label = label or tr("Hodnota")
                 if label not in answers:
                     value = ask(label)
                     if value is None:
@@ -746,17 +838,18 @@ def build_command(tool, ctx, ask, pick=None, answers=None, extra=()):
                 key = (name, label)
                 if key not in answers:  # the same placeholder twice means the same file
                     if pick is None:
-                        raise ValueError(f"{{{name}}} tu nelze použít.")
-                    value = pick(kind, *parse_file_prompt(label, default_label, tool.get("pripony", [])))
+                        raise ValueError(tr("{{{0}}} tu nelze použít.").format(name))
+                    value = pick(kind, *parse_file_prompt(label, tr(default_label), tool.get("pripony", [])))
                     if not value:
                         raise ToolCancelled
                     answers[key] = os.path.normpath(value)
                 return answers[key]
             value = ctx.get(name)
             if not isinstance(value, str):
-                raise ValueError(f"Neznámý zástupný symbol {{{name}}} v nástroji „{tool['nazev']}“.")
+                raise ValueError(tr("Neznámý zástupný symbol {{{0}}} v nástroji „{1}“.").format(name, tool['nazev']))
             if not value:
-                raise ValueError(EMPTY_PLACEHOLDER.get(name, f"Pro {{{name}}} není nic vybráno."))
+                raise ValueError(tr(EMPTY_PLACEHOLDER[name]) if name in EMPTY_PLACEHOLDER
+                                 else tr("Pro {{{0}}} není nic vybráno.").format(name))
             return value
         return PLACEHOLDER.sub(repl, text)
 
@@ -776,7 +869,7 @@ def build_command(tool, ctx, ask, pick=None, answers=None, extra=()):
     for arg in list(tool.get("argumenty", [])) + list(extra):
         if arg == "{soubory}":
             if not ctx["soubory"]:
-                raise ValueError("Nástroj potřebuje vybrané soubory, ale žádný není vybrán.")
+                raise ValueError(tr("Nástroj potřebuje vybrané soubory, ale žádný není vybrán."))
             cmd.extend(ctx["soubory"])
         else:
             cmd.append(substitute(str(arg)))
@@ -819,14 +912,14 @@ def show_modal(parent, win, focus):
 def ask_conflict(parent, message):
     """F5/F6 with items that already exist: OVERWRITE_OLDER, OVERWRITE_ALL, OVERWRITE_SKIP or None (cancel).
     Enter presses the focused button, arrows move between the buttons."""
-    win = modal_dialog(parent, "Položky už existují")
+    win = modal_dialog(parent, tr("Položky už existují"))
     ttk.Label(win, text=message, justify="left", padding=12).pack(fill="x")
     result = {"value": None}
     row = ttk.Frame(win, padding=(12, 0, 12, 12))
     row.pack(fill="x")
     buttons = []
-    for value, text in ((OVERWRITE_OLDER, "Přepsat jen starší"), (OVERWRITE_ALL, "Přepsat vše"),
-                        (OVERWRITE_SKIP, "Přeskočit existující"), (None, "Storno")):
+    for value, text in ((OVERWRITE_OLDER, tr("Přepsat jen starší")), (OVERWRITE_ALL, tr("Přepsat vše")),
+                        (OVERWRITE_SKIP, tr("Přeskočit existující")), (None, tr("Storno"))):
         b = ttk.Button(row, text=text, command=lambda v=value: (result.update(value=v), win.destroy()))
         b.pack(side="left", padx=(0, 6))
         b.bind("<Return>", lambda e: e.widget.invoke())
@@ -840,47 +933,47 @@ def ask_conflict(parent, message):
 
 def conflict_message(sources, dest, conflicts):
     """Text of the overwrite question: how many items exist, which targets are NEWER than the source."""
-    lines = [f"V cíli už existuje {len(conflicts)} z {len(sources)} položek."]
+    lines = [tr("V cíli už existuje {0} z {1} položek.").format(len(conflicts), len(sources))]
     newer = newer_targets(conflicts, dest)
     if newer:
-        lines += ["", f"POZOR: v cíli je NOVĚJŠÍ verze u {len(newer)} souborů:"]
+        lines += ["", tr("POZOR: v cíli je NOVĚJŠÍ verze u {0} souborů:").format(len(newer))]
         for name, s_time, d_time in newer[:8]:
-            lines.append(f"   {name}\n        v cíli {fmt_time(d_time)}   ×   kopírovaný {fmt_time(s_time)}")
+            lines.append(tr("   {0}\n        v cíli {1}   ×   kopírovaný {2}").format(name, fmt_time(d_time), fmt_time(s_time)))
         if len(newer) > 8:
-            lines.append(f"   … a dalších {len(newer) - 8}")
+            lines.append(tr("   … a dalších {0}").format(len(newer) - 8))
     else:
-        lines += ["", "Žádný z existujících souborů není v cíli novější."]
+        lines += ["", tr("Žádný z existujících souborů není v cíli novější.")]
     folders = [c for c in conflicts if os.path.isdir(c) and os.path.isdir(os.path.join(dest, os.path.basename(c)))]
     if folders:
-        lines += ["", f"Složky ({len(folders)}) se sloučí; volba platí pro každý soubor uvnitř."]
+        lines += ["", tr("Složky ({0}) se sloučí; volba platí pro každý soubor uvnitř.").format(len(folders))]
     lines += ["",
-              "Přepsat jen starší – nahradí jen soubory, které jsou v cíli starší;",
-              "        novější a stejně staré v cíli zůstanou (při přesunu i ve zdroji)",
-              "Přepsat vše – nahradí všechny existující soubory, i novější",
-              "Přeskočit existující – existující položky se nezmění"]
+              tr("Přepsat jen starší – nahradí jen soubory, které jsou v cíli starší;"),
+              tr("        novější a stejně staré v cíli zůstanou (při přesunu i ve zdroji)"),
+              tr("Přepsat vše – nahradí všechny existující soubory, i novější"),
+              tr("Přeskočit existující – existující položky se nezmění")]
     return "\n".join(lines)
 
 
 def ask_tool_input(parent, title, context, prompt):
     """A running tool waits for input (Python input(), set /p, pause). Returns the text, or None, which
     closes the tool's input (the tool then ends as if it reached the end of a file)."""
-    win = modal_dialog(parent, f"{title} – zadání")
+    win = modal_dialog(parent, tr("{0} – zadání").format(title))
     win.resizable(True, False)
     body = ttk.Frame(win, padding=12)
     body.pack(fill="both", expand=True)
     if context:
-        ttk.Label(body, text="Nástroj vypsal:").pack(anchor="w")
-        text = tk.Text(body, height=min(len(context), 14), width=80, wrap="word", font=("Consolas", 9),
+        ttk.Label(body, text=tr("Nástroj vypsal:")).pack(anchor="w")
+        text = tk.Text(body, height=min(len(context), 14), width=80, wrap="word", font=("Consolas", scaled(9)),
                        relief="flat", background="#f4f4f4")
         text.insert("1.0", "\n".join(context))
         text.configure(state="disabled")
         text.pack(fill="x", pady=(2, 8))
-    ttk.Label(body, text=prompt.strip() or "Nástroj čeká na vstup:",
-              font=("Segoe UI", 10, "bold")).pack(anchor="w")
+    ttk.Label(body, text=prompt.strip() or tr("Nástroj čeká na vstup:"),
+              font=("Segoe UI", scaled(10), "bold")).pack(anchor="w")
     var = tk.StringVar()
     entry = ttk.Entry(body, textvariable=var, width=60)
     entry.pack(fill="x", pady=(4, 0))
-    ttk.Label(body, text="Enter = odeslat (i prázdné = výchozí volba nástroje)   Esc = ukončit vstup",
+    ttk.Label(body, text=tr("Enter = odeslat (i prázdné = výchozí volba nástroje)   Esc = ukončit vstup"),
               foreground="#666666").pack(anchor="w", pady=(4, 0))
     result = {"value": None}
 
@@ -891,8 +984,8 @@ def ask_tool_input(parent, title, context, prompt):
     entry.bind("<KP_Enter>", lambda e: send())
     row = ttk.Frame(win, padding=(12, 0, 12, 12))
     row.pack(fill="x")
-    ttk.Button(row, text="Odeslat", command=send).pack(side="left")
-    ttk.Button(row, text="Ukončit vstup", command=win.destroy).pack(side="left", padx=6)
+    ttk.Button(row, text=tr("Odeslat"), command=send).pack(side="left")
+    ttk.Button(row, text=tr("Ukončit vstup"), command=win.destroy).pack(side="left", padx=6)
     show_modal(parent, win, entry)
     return result["value"]
 
@@ -901,7 +994,8 @@ def ask_tool_input(parent, title, context, prompt):
 
 class Pane(ttk.Frame):
     COLUMNS = ("name", "type", "size", "date")
-    TITLES = {"name": "Název", "type": "Typ", "size": "Velikost", "date": "Změněno"}
+    TITLES = {"name": tr_mark("Název"), "type": tr_mark("Typ"), "size": tr_mark("Velikost"),
+              "date": tr_mark("Změněno")}
 
     def __init__(self, master, app):
         super().__init__(master)
@@ -973,7 +1067,7 @@ class Pane(ttk.Frame):
         try:
             entries = list(os.scandir(path))
         except OSError as e:
-            messagebox.showerror("Chyba", f"Nelze otevřít:\n{path}\n\n{e}")
+            messagebox.showerror(tr("Chyba"), tr("Nelze otevřít:\n{0}\n\n{1}").format(path, e))
             self.path_var.set(self.path)
             return
         if os.path.normcase(path) != os.path.normcase(self.path):
@@ -1056,7 +1150,7 @@ class Pane(ttk.Frame):
         """The column the pane is sorted by shows ▲ (ascending: A→Z, smallest, oldest) or ▼ (descending)."""
         for col in self.COLUMNS:
             arrow = (" ▼" if self.sort_rev else " ▲") if col == self.sort_col else ""
-            self.tree.heading(col, text=self.TITLES[col] + arrow)
+            self.tree.heading(col, text=tr(self.TITLES[col]) + arrow)
 
     def sort_by(self, col):
         if col == self.sort_col:
@@ -1139,7 +1233,7 @@ class Pane(ttk.Frame):
     def update_status(self):
         sel = self.selected_paths()
         total = sum(self.sizes.get(p, 0) for p in sel)
-        word = "Označeno" if self.marked else "Vybráno"
+        word = tr("Označeno") if self.marked else tr("Vybráno")
         self.status_var.set(f"{word} {len(sel)} z {len(self.items)}, {human_size(total)}")
 
     def set_marker(self, active):
@@ -1260,14 +1354,14 @@ class Pane(ttk.Frame):
 # ---------------------------------------------------------------- compare / sync window
 
 class SyncWindow(tk.Toplevel):
-    STATUS_TEXT = {SAME: "stejné", DIFFERENT: "liší se", LEFT_ONLY: "jen vlevo", RIGHT_ONLY: "jen vpravo",
-                   TYPE_CONFLICT: "soubor × složka"}
+    STATUS_TEXT = {SAME: tr_mark("stejné"), DIFFERENT: tr_mark("liší se"), LEFT_ONLY: tr_mark("jen vlevo"),
+                   RIGHT_ONLY: tr_mark("jen vpravo"), TYPE_CONFLICT: tr_mark("soubor × složka")}
     ACTION_TEXT = {TO_RIGHT: "→", TO_LEFT: "←", NO_ACTION: ""}
 
     def __init__(self, app, left, right):
         super().__init__(app)
         self.app = app
-        self.title("Porovnat a synchronizovat složky")
+        self.title(tr("Porovnat a synchronizovat složky"))
         self.geometry("1050x620")
         self.rows = []
         self.compared = None  # (left, right) the rows belong to
@@ -1277,7 +1371,7 @@ class SyncWindow(tk.Toplevel):
         top = ttk.Frame(self, padding=6)
         top.pack(fill="x")
         self.left_var, self.right_var = tk.StringVar(), tk.StringVar()
-        for r, (label, var) in enumerate((("Levá:", self.left_var), ("Pravá:", self.right_var))):
+        for r, (label, var) in enumerate(((tr("Levá:"), self.left_var), (tr("Pravá:"), self.right_var))):
             ttk.Label(top, text=label).grid(row=r, column=0, sticky="w", padx=(0, 4))
             ttk.Entry(top, textvariable=var).grid(row=r, column=1, sticky="ew", pady=1)
         top.columnconfigure(1, weight=1)
@@ -1287,20 +1381,20 @@ class SyncWindow(tk.Toplevel):
         self.recursive = tk.BooleanVar(value=True)
         self.binary = tk.BooleanVar(value=True)
         self.show_same = tk.BooleanVar(value=False)
-        ttk.Checkbutton(opts, text="Včetně podsložek", variable=self.recursive).pack(side="left")
-        ttk.Checkbutton(opts, text="Porovnat obsah binárně (jinak jen velikost a čas)",
+        ttk.Checkbutton(opts, text=tr("Včetně podsložek"), variable=self.recursive).pack(side="left")
+        ttk.Checkbutton(opts, text=tr("Porovnat obsah binárně (jinak jen velikost a čas)"),
                         variable=self.binary).pack(side="left", padx=10)
-        ttk.Checkbutton(opts, text="Zobrazit stejné", variable=self.show_same,
+        ttk.Checkbutton(opts, text=tr("Zobrazit stejné"), variable=self.show_same,
                         command=self.refresh).pack(side="left")
-        self.compare_btn = ttk.Button(opts, text="Porovnat", command=self.compare)
+        self.compare_btn = ttk.Button(opts, text=tr("Porovnat"), command=self.compare)
         self.compare_btn.pack(side="right")
 
         body = ttk.Frame(self, padding=6)
         body.pack(fill="both", expand=True)
-        cols = (("rel", "Cesta", 330, "w", True), ("lsize", "Vlevo", 90, "e", False),
-                ("ldate", "Změněno vlevo", 125, "center", False), ("action", "Akce", 50, "center", False),
-                ("rsize", "Vpravo", 90, "e", False), ("rdate", "Změněno vpravo", 125, "center", False),
-                ("status", "Stav", 110, "w", False))
+        cols = (("rel", tr("Cesta"), 330, "w", True), ("lsize", tr("Vlevo"), 90, "e", False),
+                ("ldate", tr("Změněno vlevo"), 125, "center", False), ("action", tr("Akce"), 50, "center", False),
+                ("rsize", tr("Vpravo"), 90, "e", False), ("rdate", tr("Změněno vpravo"), 125, "center", False),
+                ("status", tr("Stav"), 110, "w", False))
         self.tree = ttk.Treeview(body, columns=[c[0] for c in cols], show="headings", selectmode="extended")
         for col, title, width, anchor, stretch in cols:
             self.tree.heading(col, text=title)
@@ -1318,23 +1412,23 @@ class SyncWindow(tk.Toplevel):
 
         actions = ttk.Frame(self, padding=(6, 0))
         actions.pack(fill="x")
-        ttk.Button(actions, text="→ Kopírovat doprava (→)",
+        ttk.Button(actions, text=tr("→ Kopírovat doprava (→)"),
                    command=lambda: self.set_action(TO_RIGHT)).pack(side="left")
-        ttk.Button(actions, text="← Kopírovat doleva (←)",
+        ttk.Button(actions, text=tr("← Kopírovat doleva (←)"),
                    command=lambda: self.set_action(TO_LEFT)).pack(side="left", padx=4)
-        ttk.Button(actions, text="Nic nedělat (mezerník)",
+        ttk.Button(actions, text=tr("Nic nedělat (mezerník)"),
                    command=lambda: self.set_action(NO_ACTION)).pack(side="left")
         self.summary_var = tk.StringVar()
         ttk.Label(actions, textvariable=self.summary_var).pack(side="left", padx=10)
 
         bottom = ttk.Frame(self, padding=6)
         bottom.pack(fill="x")
-        self.progress_var = tk.StringVar(value="Zvol složky a stiskni Porovnat.")
+        self.progress_var = tk.StringVar(value=tr("Zvol složky a stiskni Porovnat."))
         ttk.Label(bottom, textvariable=self.progress_var, anchor="w").pack(side="left", fill="x", expand=True)
-        ttk.Button(bottom, text="Zavřít", command=self.close).pack(side="right")
-        self.cancel_btn = ttk.Button(bottom, text="Přerušit", command=self.cancel.set, state="disabled")
+        ttk.Button(bottom, text=tr("Zavřít"), command=self.close).pack(side="right")
+        self.cancel_btn = ttk.Button(bottom, text=tr("Přerušit"), command=self.cancel.set, state="disabled")
         self.cancel_btn.pack(side="right", padx=4)
-        self.sync_btn = ttk.Button(bottom, text="Synchronizovat", command=self.sync, state="disabled")
+        self.sync_btn = ttk.Button(bottom, text=tr("Synchronizovat"), command=self.sync, state="disabled")
         self.sync_btn.pack(side="right")
         self.progress = ttk.Progressbar(bottom, length=200, maximum=100)
         self.progress.pack(side="right", padx=8)
@@ -1369,7 +1463,7 @@ class SyncWindow(tk.Toplevel):
             try:
                 result, error = func(*args, self.cancel, report), None
             except Cancelled:
-                result, error = None, "Přerušeno uživatelem."
+                result, error = None, tr("Přerušeno uživatelem.")
             except Exception as e:  # noqa: BLE001 – show anything to the user
                 result, error = None, str(e)
             self.app.jobs.put(("call", (self.job_done, (on_done, result, error))))
@@ -1391,14 +1485,14 @@ class SyncWindow(tk.Toplevel):
         self.set_buttons()
         if error:
             self.progress_var.set(error)
-            messagebox.showerror("Porovnání složek", error, parent=self)
+            messagebox.showerror(tr("Porovnání složek"), error, parent=self)
             return
         on_done(result)
 
     def show_errors(self, errors):
         if errors:
-            extra = f"\n… a dalších {len(errors) - 15}" if len(errors) > 15 else ""
-            messagebox.showerror("Chyby", "\n".join(errors[:15]) + extra, parent=self)
+            extra = tr("\n… a dalších {0}").format(len(errors) - 15) if len(errors) > 15 else ""
+            messagebox.showerror(tr("Chyby"), "\n".join(errors[:15]) + extra, parent=self)
 
     # -- compare
     def compare(self):
@@ -1407,10 +1501,10 @@ class SyncWindow(tk.Toplevel):
         left, right = (os.path.abspath(os.path.expandvars(v.get().strip())) for v in (self.left_var, self.right_var))
         for path in (left, right):
             if not os.path.isdir(path):
-                messagebox.showerror("Porovnání složek", f"Složka neexistuje:\n{path}", parent=self)
+                messagebox.showerror(tr("Porovnání složek"), tr("Složka neexistuje:\n{0}").format(path), parent=self)
                 return
         if is_inside(left, right) or is_inside(right, left):
-            messagebox.showwarning("Porovnání složek", "Složky jsou stejné nebo jedna leží uvnitř druhé.",
+            messagebox.showwarning(tr("Porovnání složek"), tr("Složky jsou stejné nebo jedna leží uvnitř druhé."),
                                    parent=self)
             return
         self.rows, self.compared = [], None
@@ -1422,7 +1516,7 @@ class SyncWindow(tk.Toplevel):
         self.rows, self.compared = rows, (left, right)
         self.refresh()
         self.set_buttons()
-        self.progress_var.set(f"Porovnáno, položek: {len(rows)}" + (f", chyb: {len(errors)}" if errors else ""))
+        self.progress_var.set(tr("Porovnáno, položek: {0}").format(len(rows)) + (tr(", chyb: {0}").format(len(errors)) if errors else ""))
         self.show_errors(errors)
 
     def refresh(self):
@@ -1439,7 +1533,7 @@ class SyncWindow(tk.Toplevel):
             is_dir = (row["left"] or row["right"])[0]
             self.tree.insert("", "end", iid=str(i), tags=(row["status"],), values=(
                 row["rel"] + ("\\" if is_dir else ""), *fmt(row["left"]), self.ACTION_TEXT[row["action"]],
-                *fmt(row["right"]), self.STATUS_TEXT[row["status"]]))
+                *fmt(row["right"]), tr(self.STATUS_TEXT[row["status"]])))
         self.update_summary()
 
     def update_summary(self):
@@ -1452,8 +1546,8 @@ class SyncWindow(tk.Toplevel):
         undecided = sum(1 for r in self.rows if r["status"] == DIFFERENT and not r["action"])
         conflicts = sum(1 for r in self.rows if r["status"] == TYPE_CONFLICT)
         same = sum(1 for r in self.rows if r["status"] == SAME)
-        self.summary_var.set(f"Doprava: {nr} ({human_size(br)})   Doleva: {nl} ({human_size(bl)})   "
-                             f"Bez akce: {undecided}   Konflikty: {conflicts}   Stejné: {same}")
+        self.summary_var.set(tr("Doprava: {0} ({1})   Doleva: {2} ({3})   Bez akce: {4}   Konflikty: "
+                                "{5}   Stejné: {6}").format(nr, human_size(br), nl, human_size(bl), undecided, conflicts, same))
 
     def set_action(self, action):
         for iid in self.tree.selection():
@@ -1476,13 +1570,12 @@ class SyncWindow(tk.Toplevel):
         left, right = self.compared
         n_right = sum(1 for r in todo if r["action"] == TO_RIGHT)
         overwritten = [r["rel"] for r in todo if r["right" if r["action"] == TO_RIGHT else "left"] is not None]
-        msg = f"Zkopírovat {n_right} položek doprava a {len(todo) - n_right} doleva?\n\n{left}\n⇄ {right}"
+        msg = tr("Zkopírovat {0} položek doprava a {1} doleva?\n\n{2}\n⇄ {3}").format(n_right, len(todo) - n_right, left, right)
         if overwritten:
-            listing = "\n".join(overwritten[:10]) + (f"\n… a dalších {len(overwritten) - 10}"
+            listing = "\n".join(overwritten[:10]) + (tr("\n… a dalších {0}").format(len(overwritten) - 10)
                                                      if len(overwritten) > 10 else "")
-            msg += (f"\n\nPŘEPÍŠE se {len(overwritten)} existujících souborů, jejich dosavadní obsah "
-                    f"se ztratí:\n{listing}")
-        if not messagebox.askokcancel("Synchronizovat", msg, icon="warning", parent=self):
+            msg += (tr("\n\nPŘEPÍŠE se {0} existujících souborů, jejich dosavadní obsah se ztratí:\n{1}").format(len(overwritten), listing))
+        if not messagebox.askokcancel(tr("Synchronizovat"), msg, icon="warning", parent=self):
             return
         self.start(sync_worker, left, right, todo, on_done=self.synced)
 
@@ -1504,6 +1597,7 @@ class SyncWindow(tk.Toplevel):
 
 # Help topics: (title, text). In the text "## " starts a subheading, "• " a bullet, `x` is a key or a name,
 # a line "klávesa<TAB>popis" is a row of a table. The topic MY_TOOLS is generated from the loaded tools.
+# The Czech titles identify the topics; other languages have their titles and texts in preklady.json.
 MY_TOOLS = "Moje nástroje"
 HELP_TOPICS = [
     ("Začínáme", """Dvojpanel je správce souborů se dvěma panely (jako Norton nebo Total Commander), který navíc umí \
@@ -1535,6 +1629,8 @@ Backspace\to úroveň výš (také řádek [..])
 Ctrl+R\tobnovit oba panely
 Ctrl+U\tprohodit složky levého a pravého panelu
 Ctrl+D\toblíbené složky
+Ctrl++ / Ctrl+-\tvětší / menší písmo
+Ctrl+0\tvýchozí velikost písma
 Ctrl+Q\tkonec
 
 ## Výběr
@@ -1556,6 +1652,7 @@ Esc\tpřerušit probíhající kopírování / přesun
 ## Příkazy
 F9\tnabídka nástrojů (vlastní skripty)
 Ctrl+S\tporovnat a synchronizovat složky
+Ctrl+G\tgit pull ve složce aktivního panelu
 F1\tnápověda
 
 ## Myš
@@ -1614,6 +1711,30 @@ Storno\tnic neudělá
 • Porovná složky levého a pravého panelu, ukáže rozdíly a navrhne směr kopírování (novější vyhrává).
 • Akci u řádků změníš šipkami → / ← nebo mezerníkem (nic nedělat). Synchronizace jen kopíruje, nikdy nemaže.
 
+## Velikost písma
+• `Ctrl++` písmo zvětší, `Ctrl+-` zmenší, `Ctrl+0` vrátí výchozí velikost (také v menu Soubor). Změní se \
+panely, menu, tlačítka, výstup nástrojů i nápověda.
+• Velikost se uloží do `dvojpanel.json` jako `velikost_pisma` (celé číslo 6 až 24, výchozí 9) a platí \
+i po novém spuštění. Lze ji tam i napsat ručně: Soubor → Upravit dvojpanel.json, pak Načíst nastavení znovu.
+• Systémová okna s dotazem (Ano / Ne, výběr souboru) kreslí Windows a velikost nemění.
+
+## Jazyk
+• Soubor → Jazyk / Language přepne program do češtiny, angličtiny, němčiny nebo polštiny: menu, tlačítka, \
+hlášky i tuto nápovědu. Změna platí hned a uloží se do `dvojpanel.json` jako `jazyk` (`cs`, `en`, `de`, `pl`).
+• Překlady jsou v souboru `preklady.json` vedle programu. Když chybí, program zůstane česky a oznámí to.
+• Česky zůstávají klíče v `nastroje.json` a názvy a popisy nástrojů, jak jsou v něm zapsané. Systémová okna \
+(Ano / Ne, výběr souboru) jsou v jazyce Windows.
+
+## Git pull (Ctrl+G)
+• Příkazy → Git pull v aktuální složce stáhne novou verzi projektu: spustí `git pull --ff-only` \
+v repozitáři, do kterého patří složka aktivního panelu (stačí být v kterékoli jeho podsložce).
+• Výpis gitu je v dolním panelu, na konci ■ Hotovo, nebo ■ Skončilo s chybou. Pak se panely obnoví \
+a nástroje se načtou znovu, takže nové nástroje projektu jsou hned v menu.
+• `--ff-only` znamená, že git jen posune složku na novější verzi. Když jsou ve složce vlastní commity \
+nebo změny, které by se s novou verzí srazily, git skončí chybou a **nic nepřepíše**.
+• Po aktualizaci samotného Dvojpanelu program připomene, že nová verze platí až po novém spuštění.
+• Složka mimo repozitář nebo chybějící program git: program to oznámí a nic nespustí.
+
 ## Zástupce na hlavní panel
 • Soubor → Vytvořit zástupce v nabídce Start, pak Start → „Dvojpanel“ → pravým tlačítkem → Připnout."""),
     ("Nástroje – jak je používat", """Nástroje jsou vlastní skripty (Python, .bat, .exe), které Dvojpanel spustí nad soubory a složkami \
@@ -1655,7 +1776,7 @@ Nástroje → Načíst nástroje znovu.
 ## Nástroje projektu (Windchill)
 Nástroje Windchillu nejsou vypsané přímo v `nastroje.json`. Projekt Windchill má vlastní seznam \
 `dvojpanel_nastroje.json` a `nastroje.json` na něj jen odkazuje (klíč `vlozit`). Výhoda: když se projekt \
-aktualizuje (git pull), nové nástroje se v menu objeví samy po Načíst nástroje znovu.
+aktualizuje (git pull, v Dvojpanelu `Ctrl+G` ve složce projektu), nové nástroje se v menu objeví samy.
 
 Šablona už odkaz na `C:/Projects/MojeAplikace/Windchill/dvojpanel_nastroje.json` obsahuje. Když nástroje \
 Windchillu v menu chybí:
@@ -1700,6 +1821,11 @@ nebo timeout ji může použít: if defined DVOJPANEL exit /b 0"""),
 ]
 
 
+def help_topic(title, body):
+    """Title and text of a help topic in the chosen language (Czech when there is no translation)."""
+    return _help.get(title, (title, body))
+
+
 def describe_tool(tool):
     """Human-readable lines about one tool for the help: what it asks for and works with."""
     lines = []
@@ -1710,30 +1836,30 @@ def describe_tool(tool):
     for m in PLACEHOLDER.finditer(joined):
         name, label = m.group(1), m.group(2)
         if name == "zadat":
-            lines.append(f"• zeptá se v okně: {label or 'Hodnota'}")
+            lines.append(tr("• zeptá se v okně: {0}").format(label or tr("Hodnota")))
         elif name in FILE_PROMPTS:
-            text, exts = parse_file_prompt(label, FILE_PROMPTS[name][1], tool.get("pripony", []))
-            verb = "vybereš soubor" if name == "vybrat_soubor" else "zvolíš, kam uložit"
+            text, exts = parse_file_prompt(label, tr(FILE_PROMPTS[name][1]), tool.get("pripony", []))
+            verb = tr("vybereš soubor") if name == "vybrat_soubor" else tr("zvolíš, kam uložit")
             lines.append(f"• {verb}: {text}" + (f" ({', '.join(exts)})" if exts else ""))
-    meaning = {"{soubory}": "pracuje s označenými / vybranými soubory v aktivním panelu",
-               "{soubor}": "pracuje se souborem pod kurzorem v aktivním panelu",
-               "{soubor_cil}": "a se souborem pod kurzorem ve druhém panelu",
-               "{slozka}": "dostane složku aktivního panelu",
-               "{cil}": "dostane složku druhého panelu (např. pro výsledky)"}
+    meaning = {"{soubory}": tr("pracuje s označenými / vybranými soubory v aktivním panelu"),
+               "{soubor}": tr("pracuje se souborem pod kurzorem v aktivním panelu"),
+               "{soubor_cil}": tr("a se souborem pod kurzorem ve druhém panelu"),
+               "{slozka}": tr("dostane složku aktivního panelu"),
+               "{cil}": tr("dostane složku druhého panelu (např. pro výsledky)")}
     for placeholder, text in meaning.items():
         if placeholder in joined:
             lines.append(f"• {text}")
     if tool.get("pripony"):
-        lines.append(f"• jen soubory: {', '.join(tool['pripony'])}")
+        lines.append(tr("• jen soubory: {0}").format(', '.join(tool['pripony'])))
     if not args:
-        lines.append("• spustí se bez parametrů; když se skript na něco zeptá (např. PN nebo CR), "
-                     "objeví se okno pro zadání")
+        lines.append(tr("• spustí se bez parametrů; když se skript na něco zeptá (např. PN nebo CR), "
+                        "objeví se okno pro zadání"))
     if tool.get("nahled"):
-        lines.append("• nejdřív náhled bez zápisu, naostro až po potvrzení")
+        lines.append(tr("• nejdřív náhled bez zápisu, naostro až po potvrzení"))
     if tool.get("zobrazit_slozku"):
-        lines.append(f"• po doběhnutí otevře ve druhém panelu: {tool_path(tool, tool['zobrazit_slozku'])}")
+        lines.append(tr("• po doběhnutí otevře ve druhém panelu: {0}").format(tool_path(tool, tool['zobrazit_slozku'])))
     command = os.path.basename(tool["skript"]) + (" " + joined if joined else "")
-    lines.append(f"Spouští: `{command}`")
+    lines.append(tr("Spouští: `{0}`").format(command))
     return lines
 
 
@@ -1741,17 +1867,17 @@ def my_tools_text(tools, error):
     """The generated help topic: every loaded tool grouped like the menu."""
     parts = []
     if error:
-        parts.append("## ⚠ Problém s nástroji\n" + error.replace("\n\n", "\n") + "\n")
+        parts.append(tr("## ⚠ Problém s nástroji\n") + error.replace("\n\n", "\n") + "\n")
     if not tools:
-        parts.append("Žádné nástroje nejsou načtené. Viz téma Nástroje – nastavení.")
+        parts.append(tr("Žádné nástroje nejsou načtené. Viz téma Nástroje – nastavení."))
         return "\n".join(parts)
-    parts.append("Všechny nástroje z menu Nástroje (F9). Popis vzniká z jejich nastavení; vlastní text "
-                 "doplní klíč `popis` v souboru nástrojů.")
+    parts.append(tr("Všechny nástroje z menu Nástroje (F9). Popis vzniká z jejich nastavení; vlastní "
+                    "text doplní klíč `popis` v souboru nástrojů."))
     groups = {}
     for tool in tools:
         groups.setdefault(tool.get("skupina") or "", []).append(tool)
     for group, items in groups.items():
-        parts.append(f"\n## {group or 'Bez skupiny'}")
+        parts.append(f"\n## {group or tr('Bez skupiny')}")
         for tool in items:
             parts.append(f"\n**{tool['nazev']}**")
             parts.extend(describe_tool(tool))
@@ -1764,27 +1890,27 @@ class HelpWindow(tk.Toplevel):
     def __init__(self, app):
         super().__init__(app)
         self.app = app
-        self.title(f"Nápověda – Dvojpanel {__version__}")
+        self.title(tr("Nápověda – Dvojpanel {0}").format(__version__))
         self.geometry("980x640")
         self.topics = list(HELP_TOPICS)
         self.listbox = tk.Listbox(self, activestyle="none", exportselection=False, width=28,
-                                  font=("Segoe UI", 10))
-        for title, _ in self.topics:
-            self.listbox.insert("end", title)
+                                  font=("Segoe UI", scaled(10)))
+        for title, body in self.topics:
+            self.listbox.insert("end", help_topic(title, body)[0])
         self.listbox.pack(side="left", fill="y", padx=(6, 0), pady=6)
         self.listbox.bind("<<ListboxSelect>>", lambda e: self.show_selected())
-        self.text = tk.Text(self, wrap="word", padx=14, pady=10, font=("Segoe UI", 10), relief="flat",
+        self.text = tk.Text(self, wrap="word", padx=14, pady=10, font=("Segoe UI", scaled(10)), relief="flat",
                             spacing1=2, spacing3=2, tabs=(250,), cursor="arrow")
         scroll = ttk.Scrollbar(self, orient="vertical", command=self.text.yview)
         self.text.configure(yscrollcommand=scroll.set)
         scroll.pack(side="right", fill="y", pady=6)
         self.text.pack(side="left", fill="both", expand=True, pady=6)
-        self.text.tag_configure("h1", font=("Segoe UI", 15, "bold"), spacing3=8)
-        self.text.tag_configure("h2", font=("Segoe UI", 11, "bold"), spacing1=12, spacing3=4,
+        self.text.tag_configure("h1", font=("Segoe UI", scaled(15), "bold"), spacing3=8)
+        self.text.tag_configure("h2", font=("Segoe UI", scaled(11), "bold"), spacing1=12, spacing3=4,
                                 foreground="#0b4ea2")
-        self.text.tag_configure("bold", font=("Segoe UI", 10, "bold"))
-        self.text.tag_configure("code", font=("Consolas", 10), background="#eeeeee")
-        self.text.tag_configure("key", font=("Consolas", 10, "bold"))
+        self.text.tag_configure("bold", font=("Segoe UI", scaled(10), "bold"))
+        self.text.tag_configure("code", font=("Consolas", scaled(10)), background="#eeeeee")
+        self.text.tag_configure("key", font=("Consolas", scaled(10), "bold"))
         self.text.tag_configure("row", lmargin1=10, lmargin2=250)  # a wrapped row continues under its text
         self.text.tag_configure("bullet", lmargin1=10, lmargin2=24)
         self.bind("<Escape>", lambda e: self.destroy())
@@ -1805,8 +1931,9 @@ class HelpWindow(tk.Toplevel):
         sel = self.listbox.curselection()
         if not sel:
             return
-        title, body = self.topics[sel[0]]
-        if title == MY_TOOLS:
+        topic = self.topics[sel[0]][0]
+        title, body = help_topic(*self.topics[sel[0]])
+        if topic == MY_TOOLS:
             body = my_tools_text(self.app.tools, self.app.tools_error)
         t = self.text
         t.configure(state="normal")
@@ -1862,7 +1989,7 @@ class FavoritesBar(ttk.Frame):
                            takefocus=False, command=lambda f=fav: self.app.open_favorite(f))
             b.bind("<Button-3>", lambda e, f=fav: self.app.favorite_context_menu(e, f))
             self.buttons.append(b)
-        self.buttons.append(ttk.Button(self, text="+ Přidat", style="Toolbutton", takefocus=False,
+        self.buttons.append(ttk.Button(self, text=tr("+ Přidat"), style="Toolbutton", takefocus=False,
                                        command=self.app.add_favorite))
         self.layout(self.winfo_width())
 
@@ -1906,6 +2033,8 @@ class App(tk.Tk):
         self.sync_window = None
         self.help_window = None
         self.settings, self.settings_error = load_settings()
+        self.language_error = set_language(self.settings["jazyk"])
+        self.base_fonts = None  # sizes of Tk's named fonts before "velikost_pisma" changed them
         self.drag = None  # {"pane", "items", "target"} while items are dragged with the mouse
         self.last_dirs = {}  # (tool, label) -> folder last used in a {vybrat_soubor}/{ulozit_soubor} dialog
         # output of the running tool: lines are logged when complete; the unfinished rest may be a prompt
@@ -1930,7 +2059,7 @@ class App(tk.Tk):
 
         log_frame = ttk.Frame(main)
         self.log_text = tk.Text(log_frame, height=8, wrap="word", state="disabled",
-                                font=("Consolas", 9))
+                                font=("Consolas", scaled(9)))
         log_scroll = ttk.Scrollbar(log_frame, orient="vertical", command=self.log_text.yview)
         self.log_text.configure(yscrollcommand=log_scroll.set)
         self.log_text.pack(side="left", fill="both", expand=True)
@@ -1939,26 +2068,27 @@ class App(tk.Tk):
 
         status = ttk.Frame(self)
         status.pack(fill="x", padx=4)
-        self.status_var = tk.StringVar(value="Připraveno")
+        self.status_var = tk.StringVar(value=tr("Připraveno"))
         ttk.Label(status, textvariable=self.status_var, anchor="w", relief="sunken").pack(
             side="left", fill="x", expand=True)
         self.progress = ttk.Progressbar(status, length=220, maximum=100)  # packed only while in use
 
-        keys = [("F1", "Nápověda", self.show_help), ("F2", "Přejmenovat", self.rename), ("F3", "Otevřít", self.open_current),
-                ("F4", "Upravit", self.edit_current), ("F5", "Kopírovat", lambda: self.transfer(False)),
-                ("F6", "Přesunout", lambda: self.transfer(True)), ("F7", "Nová složka", self.make_dir),
-                ("F8", "Smazat", self.delete), ("F9", "Nástroje", self.show_tools_popup)]
-        bar = ttk.Frame(self)
-        bar.pack(fill="x", padx=4, pady=4)
-        for key, label, cmd in keys:
-            ttk.Button(bar, text=f"{key} {label}", command=cmd, takefocus=False).pack(
-                side="left", fill="x", expand=True)
-            self.bind(f"<{key}>", lambda e, c=cmd: c())
+        self.key_bar = ttk.Frame(self)
+        self.key_bar.pack(fill="x", padx=4, pady=4)
+        self.build_key_bar()
         self.bind("<Control-r>", lambda e: self.reload_both())
         self.bind("<Control-q>", lambda e: self.on_close())
         self.bind("<Control-d>", lambda e: self.show_favorites_popup())
         self.bind("<Control-s>", lambda e: self.open_sync())
         self.bind("<Control-u>", lambda e: self.swap_panes())
+        self.bind("<Control-g>", lambda e: self.git_pull())
+        for seq in ("<Control-plus>", "<Control-KP_Add>", "<Control-equal>"):
+            self.bind(seq, lambda e: self.change_font_size(1))
+        for seq in ("<Control-minus>", "<Control-KP_Subtract>"):
+            self.bind(seq, lambda e: self.change_font_size(-1))
+        for seq in ("<Control-Key-0>", "<Control-KP_0>"):
+            self.bind(seq, lambda e: self.change_font_size(None))
+        self.apply_font_size()
         self.bind("<Escape>", lambda e: self.drag_cancel() if self.drag else self.cancel_job())
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.build_menu()
@@ -1968,11 +2098,62 @@ class App(tk.Tk):
         self.right.load(home)
         self.set_active(self.left)
         self.left.tree.focus_set()
+        if self.language_error:
+            self.log(f"⚠ {self.language_error}\n")
         if self.settings_error:
             self.log(f"⚠ {self.settings_error}\n")
         else:
             self.open_start_folders()
         self.after(100, self.poll_jobs)
+
+    def build_key_bar(self):
+        """The F1–F9 buttons at the bottom; built again when the language changes."""
+        keys = [("F1", tr("Nápověda"), self.show_help), ("F2", tr("Přejmenovat"), self.rename),
+                ("F3", tr("Otevřít"), self.open_current), ("F4", tr("Upravit"), self.edit_current),
+                ("F5", tr("Kopírovat"), lambda: self.transfer(False)),
+                ("F6", tr("Přesunout"), lambda: self.transfer(True)), ("F7", tr("Nová složka"), self.make_dir),
+                ("F8", tr("Smazat"), self.delete), ("F9", tr("Nástroje"), self.show_tools_popup)]
+        for button in self.key_bar.winfo_children():
+            button.destroy()
+        for key, label, cmd in keys:
+            ttk.Button(self.key_bar, text=f"{key} {label}", command=cmd, takefocus=False).pack(
+                side="left", fill="x", expand=True)
+            self.bind(f"<{key}>", lambda e, c=cmd: c())
+
+    # -- language
+    def change_language(self, code):
+        """Soubor → Jazyk: store the language in dvojpanel.json and show the whole program in it."""
+        self.language_var.set(self.settings["jazyk"])  # the menu shows the new one only when it worked
+        if code == self.settings["jazyk"] and code == language:
+            return
+        error = set_language(code)
+        if error:
+            set_language(self.settings["jazyk"] if self.settings["jazyk"] != code else "cs")
+            messagebox.showerror(tr("Jazyk"), error)
+            return
+        try:
+            save_setting("jazyk", code)
+        except OSError as e:
+            set_language(self.settings["jazyk"])
+            messagebox.showerror(tr("Nastavení"), tr("Nelze uložit dvojpanel.json:\n{0}").format(e))
+            return
+        self.settings["jazyk"] = code
+        self.apply_language()
+
+    def apply_language(self):
+        """Rebuild everything that shows texts: menus, the F-key bar, headings, favorites, open windows."""
+        old_menu = self.nametowidget(self["menu"]) if self["menu"] else None
+        self.build_menu()  # also fills the tool and favorites menus and the favorites bar
+        if old_menu is not None:
+            self.after_idle(old_menu.destroy)  # not now: this may run from an item of that very menu
+        self.build_key_bar()
+        for window in (self.help_window, self.sync_window):
+            if window is not None and window.winfo_exists() and not getattr(window, "running", False):
+                window.destroy()  # built in the old language; they open again in the new one
+        self.reload_both()
+        for pane in (self.left, self.right):
+            pane.show_sort_headings()
+        self.status_var.set(tr("Jazyk: {0}").format(LANGUAGES[language]))
 
     # -- settings (dvojpanel.json)
     def open_start_folders(self):
@@ -1980,38 +2161,82 @@ class App(tk.Tk):
         for pane, key in ((self.left, "levy_panel"), (self.right, "pravy_panel")):
             path = expand_path(self.settings[key])
             if os.path.normcase(path) != os.path.normcase(pane.path):
-                self.open_folder(pane, path, f"Výchozí složka ({key}) není dostupná")
+                self.open_folder(pane, path, tr("Výchozí složka ({0}) není dostupná").format(key))
 
     def edit_settings(self):
         if not SETTINGS_FILE.exists():
             try:
                 write_json(SETTINGS_FILE, SETTINGS_DEFAULTS)
             except OSError as e:
-                messagebox.showerror("Nastavení", f"Nelze vytvořit dvojpanel.json:\n{e}")
+                messagebox.showerror(tr("Nastavení"), tr("Nelze vytvořit dvojpanel.json:\n{0}").format(e))
                 return
         subprocess.Popen(["notepad.exe" if IS_WINDOWS else "xdg-open", str(SETTINGS_FILE)])
 
     def save_start_folders(self):
-        if not messagebox.askyesno("Výchozí složky", "Při spuštění otevírat tyto složky?\n\n"
-                                   f"Levý panel: {self.left.path}\nPravý panel: {self.right.path}"):
+        if not messagebox.askyesno(tr("Výchozí složky"), tr("Při spuštění otevírat tyto složky?\n\nLevý "
+                                                        "panel: {0}\nPravý panel: {1}").format(self.left.path, self.right.path)):
             return
         try:
             save_setting("levy_panel", self.left.path)
             save_setting("pravy_panel", self.right.path)
         except OSError as e:
-            messagebox.showerror("Nastavení", f"Nelze uložit dvojpanel.json:\n{e}")
+            messagebox.showerror(tr("Nastavení"), tr("Nelze uložit dvojpanel.json:\n{0}").format(e))
             return
         self.settings.update(levy_panel=self.left.path, pravy_panel=self.right.path)
-        self.status_var.set("Výchozí složky uloženy do dvojpanel.json")
+        self.status_var.set(tr("Výchozí složky uloženy do dvojpanel.json"))
+
+    def apply_font_size(self):
+        """Use "velikost_pisma": Tk's named fonts (panes, menus, buttons, dialogs of the program), the row
+        height of the lists and the fonts set by hand (tool output, help)."""
+        global font_delta
+        style = ttk.Style(self)
+        if self.base_fonts is None:
+            self.base_fonts = {}
+            for name in NAMED_FONTS:
+                try:
+                    self.base_fonts[name] = tkfont.nametofont(name, root=self).cget("size")
+                except tk.TclError:
+                    pass
+            self.base_rowheight = int(style.lookup("Treeview", "rowheight") or 20)
+        font_delta = self.settings["velikost_pisma"] - DEFAULT_FONT_SIZE
+        for name, size in self.base_fonts.items():  # a negative size is in pixels
+            tkfont.nametofont(name, root=self).configure(size=size + font_delta if size > 0 else size - font_delta)
+        line = tkfont.nametofont("TkDefaultFont", root=self).metrics("linespace")
+        style.configure("Treeview", rowheight=line + 5 if font_delta else self.base_rowheight)
+        self.log_text.configure(font=("Consolas", scaled(9)))
+        if self.help_window is not None and self.help_window.winfo_exists():
+            self.help_window.destroy()  # built with the old sizes; F1 opens it again
+        self.after_idle(lambda: self.fav_bar.layout(self.fav_bar.winfo_width()))
+
+    def change_font_size(self, step):
+        """Ctrl++ / Ctrl+-: one point up or down; step None (Ctrl+0) = the default size. Kept in
+        dvojpanel.json."""
+        current = self.settings["velikost_pisma"]
+        size = DEFAULT_FONT_SIZE if step is None else min(FONT_SIZE_MAX, max(FONT_SIZE_MIN, current + step))
+        if size != current:
+            try:
+                save_setting("velikost_pisma", size)
+            except OSError as e:
+                messagebox.showerror(tr("Nastavení"), tr("Nelze uložit dvojpanel.json:\n{0}").format(e))
+                return
+            self.settings["velikost_pisma"] = size
+            self.apply_font_size()
+        self.status_var.set(tr("Velikost písma: {0}").format(size) + (tr(" (výchozí)") if size == DEFAULT_FONT_SIZE else ""))
 
     def reload_settings(self):
         self.settings, self.settings_error = load_settings()
         if self.settings_error:
-            messagebox.showerror("Nastavení", self.settings_error)
+            messagebox.showerror(tr("Nastavení"), self.settings_error)
             return
+        if self.settings["jazyk"] != language:
+            self.language_error = set_language(self.settings["jazyk"])
+            if self.language_error:
+                messagebox.showerror(tr("Jazyk"), self.language_error)
+            self.apply_language()
+        self.apply_font_size()
         self.show_favorites_bar(self.settings["lista_oblibenych"])
         self.open_start_folders()
-        self.status_var.set("Nastavení načteno")
+        self.status_var.set(tr("Nastavení načteno"))
 
     # -- panes
     @property
@@ -2050,7 +2275,7 @@ class App(tk.Tk):
 
     def is_busy(self):
         if self.busy:
-            messagebox.showinfo("Probíhá operace", "Počkej, až doběhne předchozí operace.")
+            messagebox.showinfo(tr("Probíhá operace"), tr("Počkej, až doběhne předchozí operace."))
         return self.busy
 
     # -- file actions
@@ -2058,7 +2283,7 @@ class App(tk.Tk):
         try:
             open_with_default_app(path)
         except OSError as e:
-            messagebox.showerror("Chyba", str(e))
+            messagebox.showerror(tr("Chyba"), str(e))
 
     def open_current(self):
         item = self.active.tree.focus()
@@ -2084,12 +2309,12 @@ class App(tk.Tk):
             return
         error = rename_error(folder, old, new)
         if error:
-            messagebox.showerror("Přejmenovat", error)
+            messagebox.showerror(tr("Přejmenovat"), error)
             return
         try:
             os.rename(item, os.path.join(folder, new))
         except OSError as e:
-            messagebox.showerror("Přejmenovat", str(e))
+            messagebox.showerror(tr("Přejmenovat"), str(e))
             return
         if os.path.normcase(pane.path) == os.path.normcase(folder):
             pane.load(pane.path, focus_name=new)
@@ -2101,13 +2326,13 @@ class App(tk.Tk):
         pane = self.active
         if self.is_busy():
             return
-        name = simpledialog.askstring("Nová složka", "Název složky:", parent=self)
+        name = simpledialog.askstring(tr("Nová složka"), tr("Název složky:"), parent=self)
         if not name:
             return
         try:
             os.mkdir(os.path.join(pane.path, name))
         except OSError as e:
-            messagebox.showerror("Chyba", str(e))
+            messagebox.showerror(tr("Chyba"), str(e))
             return
         pane.load(pane.path, focus_name=name)
 
@@ -2121,14 +2346,14 @@ class App(tk.Tk):
         if not sources:
             return
         if any(os.path.normcase(os.path.dirname(s)) == os.path.normcase(dest) for s in sources):
-            messagebox.showwarning("Stejná složka", "Zdroj a cíl jsou stejná složka.")
+            messagebox.showwarning(tr("Stejná složka"), tr("Zdroj a cíl jsou stejná složka."))
             return
         for s in sources:
             if os.path.isdir(s) and is_inside(dest, s):
-                messagebox.showwarning("Nelze", f"Složku nelze kopírovat do sebe sama:\n{s}")
+                messagebox.showwarning(tr("Nelze"), tr("Složku nelze kopírovat do sebe sama:\n{0}").format(s))
                 return
-        verb = "Přesunout" if move else "Kopírovat"
-        if not messagebox.askokcancel(verb, f"{verb} {len(sources)} položek do:\n{dest}"):
+        verb = tr("Přesunout") if move else tr("Kopírovat")
+        if not messagebox.askokcancel(verb, tr("{0} {1} položek do:\n{2}").format(verb, len(sources), dest)):
             return
         conflicts = [s for s in sources if os.path.lexists(os.path.join(dest, os.path.basename(s)))]
         overwrite = OVERWRITE_SKIP
@@ -2179,10 +2404,10 @@ class App(tk.Tk):
         self.drag["target"] = target
         n = len(self.drag["items"])
         if target:
-            verb = "Přesunout" if event.state & 0x0001 else "Kopírovat"
-            self.status_var.set(f"{verb} {n} položek do: {target[2]}   (Shift = přesunout, Esc = zrušit)")
+            verb = tr("Přesunout") if event.state & 0x0001 else tr("Kopírovat")
+            self.status_var.set(tr("{0} {1} položek do: {2}   (Shift = přesunout, Esc = zrušit)").format(verb, n, target[2]))
         else:
-            self.status_var.set(f"Přetažení {n} položek: pusť nad druhým panelem nebo nad složkou")
+            self.status_var.set(tr("Přetažení {0} položek: pusť nad druhým panelem nebo nad složkou").format(n))
         cursor = "plus" if target else "no"
         for p in (self.left, self.right):
             p.tree.configure(cursor=cursor)
@@ -2192,7 +2417,7 @@ class App(tk.Tk):
         for p in (self.left, self.right):
             p.tree.configure(cursor="")
             p.show_drop_row(None)
-        self.status_var.set("Připraveno")
+        self.status_var.set(tr("Připraveno"))
         return drag
 
     def drag_cancel(self):
@@ -2212,10 +2437,10 @@ class App(tk.Tk):
         paths = self.active.selected_paths()
         if not paths:
             return
-        msg = f"Přesunout {len(paths)} položek do koše?"
+        msg = tr("Přesunout {0} položek do koše?").format(len(paths))
         if is_network_path(self.active.path):
-            msg = f"POZOR: síťový disk nemá koš, {len(paths)} položek se smaže TRVALE.\n\nPokračovat?"
-        if messagebox.askyesno("Smazat", msg, icon="warning"):
+            msg = tr("POZOR: síťový disk nemá koš, {0} položek se smaže TRVALE.\n\nPokračovat?").format(len(paths))
+        if messagebox.askyesno(tr("Smazat"), msg, icon="warning"):
             self.run_job(delete_worker, paths)
 
     # -- background jobs
@@ -2260,7 +2485,7 @@ class App(tk.Tk):
 
     def show_progress(self, text, percent=None):
         if self.busy and self.cancellable and not self.cancel.is_set():
-            text += "   (Esc = přerušit)"
+            text += tr("   (Esc = přerušit)")
         self.status_var.set(text)
         if percent is None:
             return
@@ -2275,50 +2500,64 @@ class App(tk.Tk):
     def cancel_job(self):
         if self.busy and self.cancellable and not self.cancel.is_set():
             self.cancel.set()
-            self.status_var.set("Přerušuji…")
+            self.status_var.set(tr("Přerušuji…"))
 
     def finish_job(self, errors):
         self.busy = False
         self.hide_progress()
-        self.status_var.set(f"Hotovo, chyb: {len(errors)}" if errors else "Hotovo")
+        self.status_var.set(tr("Hotovo, chyb: {0}").format(len(errors)) if errors else tr("Hotovo"))
         if not errors and self.job_pane is not None:
             self.job_pane.clear_marks()  # like NC: marks go away after a successful operation
         self.job_pane = None
         self.reload_both()
         if errors:
-            extra = f"\n… a dalších {len(errors) - 15}" if len(errors) > 15 else ""
-            messagebox.showerror("Chyby", "\n".join(errors[:15]) + extra)
+            extra = tr("\n… a dalších {0}").format(len(errors) - 15) if len(errors) > 15 else ""
+            messagebox.showerror(tr("Chyby"), "\n".join(errors[:15]) + extra)
 
     # -- menu and tools
     def build_menu(self):
         menubar = tk.Menu(self)
         file_menu = tk.Menu(menubar, tearoff=False)
-        file_menu.add_command(label="Obnovit", accelerator="Ctrl+R", command=self.reload_both)
+        file_menu.add_command(label=tr("Obnovit"), accelerator="Ctrl+R", command=self.reload_both)
         file_menu.add_separator()
-        file_menu.add_command(label="Uložit aktuální složky jako výchozí…", command=self.save_start_folders)
-        file_menu.add_command(label="Upravit dvojpanel.json", command=self.edit_settings)
-        file_menu.add_command(label="Načíst nastavení znovu", command=self.reload_settings)
+        file_menu.add_command(label=tr("Uložit aktuální složky jako výchozí…"), command=self.save_start_folders)
+        file_menu.add_command(label=tr("Upravit dvojpanel.json"), command=self.edit_settings)
+        file_menu.add_command(label=tr("Načíst nastavení znovu"), command=self.reload_settings)
         file_menu.add_separator()
-        file_menu.add_command(label="Vytvořit zástupce v nabídce Start…", command=self.make_shortcut)
+        file_menu.add_command(label=tr("Větší písmo"), accelerator="Ctrl++", command=lambda: self.change_font_size(1))
+        file_menu.add_command(label=tr("Menší písmo"), accelerator="Ctrl+-", command=lambda: self.change_font_size(-1))
+        file_menu.add_command(label=tr("Výchozí velikost písma"), accelerator="Ctrl+0",
+                              command=lambda: self.change_font_size(None))
+        lang_menu = tk.Menu(file_menu, tearoff=False)
+        self.language_var = tk.StringVar(value=language)
+        for code, name in LANGUAGES.items():
+            lang_menu.add_radiobutton(label=name, value=code, variable=self.language_var,
+                                      command=lambda c=code: self.change_language(c))
+        # always readable, whatever language is on: the way back from a language one does not speak
+        file_menu.add_cascade(label="Jazyk / Language", menu=lang_menu)
         file_menu.add_separator()
-        file_menu.add_command(label="Konec", accelerator="Ctrl+Q", command=self.on_close)
-        menubar.add_cascade(label="Soubor", menu=file_menu)
+        file_menu.add_command(label=tr("Vytvořit zástupce v nabídce Start…"), command=self.make_shortcut)
+        file_menu.add_separator()
+        file_menu.add_command(label=tr("Konec"), accelerator="Ctrl+Q", command=self.on_close)
+        menubar.add_cascade(label=tr("Soubor"), menu=file_menu)
         cmd_menu = tk.Menu(menubar, tearoff=False)
-        cmd_menu.add_command(label="Porovnat a synchronizovat složky…", accelerator="Ctrl+S",
+        cmd_menu.add_command(label=tr("Porovnat a synchronizovat složky…"), accelerator="Ctrl+S",
                              command=self.open_sync)
-        cmd_menu.add_command(label="Prohodit panely", accelerator="Ctrl+U", command=self.swap_panes)
-        menubar.add_cascade(label="Příkazy", menu=cmd_menu)
+        cmd_menu.add_command(label=tr("Prohodit panely"), accelerator="Ctrl+U", command=self.swap_panes)
+        cmd_menu.add_separator()
+        cmd_menu.add_command(label=tr("Git pull v aktuální složce"), accelerator="Ctrl+G", command=self.git_pull)
+        menubar.add_cascade(label=tr("Příkazy"), menu=cmd_menu)
         self.favorites_menu = tk.Menu(menubar, tearoff=False)
-        menubar.add_cascade(label="Oblíbené", menu=self.favorites_menu)
+        menubar.add_cascade(label=tr("Oblíbené"), menu=self.favorites_menu)
         self.tools_menu = tk.Menu(menubar, tearoff=False)
-        menubar.add_cascade(label="Nástroje", menu=self.tools_menu)
+        menubar.add_cascade(label=tr("Nástroje"), menu=self.tools_menu)
         help_menu = tk.Menu(menubar, tearoff=False)
-        help_menu.add_command(label="Nápověda", accelerator="F1", command=self.show_help)
-        help_menu.add_command(label="Moje nástroje", command=lambda: self.show_help(MY_TOOLS))
+        help_menu.add_command(label=tr("Nápověda"), accelerator="F1", command=self.show_help)
+        help_menu.add_command(label=tr("Moje nástroje"), command=lambda: self.show_help(MY_TOOLS))
         help_menu.add_separator()
-        help_menu.add_command(label="O programu", command=lambda: messagebox.showinfo(
-            "O programu", f"Dvojpanel {__version__}\nPython {sys.version.split()[0]}"))
-        menubar.add_cascade(label="Nápověda", menu=help_menu)
+        help_menu.add_command(label=tr("O programu"), command=lambda: messagebox.showinfo(
+            tr("O programu"), f"Dvojpanel {__version__}\nPython {sys.version.split()[0]}"))
+        menubar.add_cascade(label=tr("Nápověda"), menu=help_menu)
         self.configure(menu=menubar)
         self.reload_tools(startup=True)
         self.reload_favorites(startup=True)
@@ -2331,19 +2570,19 @@ class App(tk.Tk):
 
     def make_shortcut(self):
         if not IS_WINDOWS:
-            messagebox.showinfo("Zástupce", "Zástupce lze vytvořit jen ve Windows.")
+            messagebox.showinfo(tr("Zástupce"), tr("Zástupce lze vytvořit jen ve Windows."))
             return
         try:
             lnk = create_shortcut(start_menu_folder())
         except OSError as e:
-            messagebox.showerror("Zástupce", f"Zástupce se nepodařilo vytvořit:\n{e}\n\n"
-                                 "Ručně: pravým tlačítkem na plochu → Nový → Zástupce, umístění:\n"
-                                 f"\"{gui_python_executable()}\" \"{APP_DIR / 'dvojpanel.py'}\"")
+            messagebox.showerror(tr("Zástupce"), tr("Zástupce se nepodařilo vytvořit:\n{0}\n\nRučně: pravým "
+                                                "tlačítkem na plochu → Nový → Zástupce, umístění:\n"
+                                                "\"{1}\" \"{2}\"").format(e, gui_python_executable(), APP_DIR / 'dvojpanel.py'))
             return
-        messagebox.showinfo("Zástupce", f"Zástupce vytvořen:\n{lnk}\n\n"
-                            "Připnutí na hlavní panel: Start → napiš „Dvojpanel“ → pravým tlačítkem → "
-                            "Připnout na hlavní panel.\n\n"
-                            "Po aktualizaci Pythonu nebo přesunu složky programu zástupce vytvoř znovu.")
+        messagebox.showinfo(tr("Zástupce"), tr("Zástupce vytvořen:\n{0}\n\nPřipnutí na hlavní panel: Start → "
+                                           "napiš „Dvojpanel“ → pravým tlačítkem → Připnout na hlavní "
+                                           "panel.\n\nPo aktualizaci Pythonu nebo přesunu složky "
+                                           "programu zástupce vytvoř znovu.").format(lnk))
 
     # -- favorites
     def fill_favorites_menu(self, menu):
@@ -2353,18 +2592,18 @@ class App(tk.Tk):
                 menu.add_command(label=fav.get("nazev") or fav["cesta"],
                                  command=lambda f=fav: self.open_favorite(f))
         else:
-            menu.add_command(label=self.favorites_error or "Žádné oblíbené složky", state="disabled")
+            menu.add_command(label=self.favorites_error or tr("Žádné oblíbené složky"), state="disabled")
         menu.add_separator()
-        menu.add_command(label="Přidat aktuální složku…", command=self.add_favorite)
+        menu.add_command(label=tr("Přidat aktuální složku…"), command=self.add_favorite)
         remove_menu = tk.Menu(menu, tearoff=False)
         for fav in self.favorites:
             remove_menu.add_command(label=fav.get("nazev") or fav["cesta"],
                                     command=lambda f=fav: self.remove_favorite(f))
-        menu.add_cascade(label="Odebrat", menu=remove_menu, state="normal" if self.favorites else "disabled")
-        menu.add_command(label="Upravit oblibene.json", command=self.edit_favorites)
-        menu.add_command(label="Načíst oblíbené znovu", command=self.reload_favorites)
+        menu.add_cascade(label=tr("Odebrat"), menu=remove_menu, state="normal" if self.favorites else "disabled")
+        menu.add_command(label=tr("Upravit oblibene.json"), command=self.edit_favorites)
+        menu.add_command(label=tr("Načíst oblíbené znovu"), command=self.reload_favorites)
         menu.add_separator()
-        menu.add_checkbutton(label="Zobrazit lištu oblíbených", variable=self.fav_bar_var,
+        menu.add_checkbutton(label=tr("Zobrazit lištu oblíbených"), variable=self.fav_bar_var,
                              command=self.toggle_favorites_bar)
 
     def show_favorites_bar(self, visible):
@@ -2379,16 +2618,16 @@ class App(tk.Tk):
         try:
             save_setting("lista_oblibenych", visible)
         except OSError as e:
-            messagebox.showerror("Nastavení", f"Nelze uložit dvojpanel.json:\n{e}")
+            messagebox.showerror(tr("Nastavení"), tr("Nelze uložit dvojpanel.json:\n{0}").format(e))
         self.settings["lista_oblibenych"] = visible
         self.show_favorites_bar(visible)
 
     def favorite_context_menu(self, event, fav):
         menu = tk.Menu(self, tearoff=False)
-        menu.add_command(label="Otevřít v aktivním panelu", command=lambda: self.open_favorite(fav))
-        menu.add_command(label="Otevřít ve druhém panelu", command=lambda: self.open_favorite(fav, self.other))
+        menu.add_command(label=tr("Otevřít v aktivním panelu"), command=lambda: self.open_favorite(fav))
+        menu.add_command(label=tr("Otevřít ve druhém panelu"), command=lambda: self.open_favorite(fav, self.other))
         menu.add_separator()
-        menu.add_command(label="Odebrat z oblíbených…", command=lambda: self.remove_favorite(fav))
+        menu.add_command(label=tr("Odebrat z oblíbených…"), command=lambda: self.remove_favorite(fav))
         menu.tk_popup(event.x_root, event.y_root)
 
     def reload_favorites(self, startup=False):
@@ -2399,9 +2638,9 @@ class App(tk.Tk):
         if self.favorites_error:
             self.log(f"⚠ {self.favorites_error}\n")
             if not startup:
-                messagebox.showerror("Oblíbené", self.favorites_error)
+                messagebox.showerror(tr("Oblíbené"), self.favorites_error)
         elif not startup:
-            self.status_var.set(f"Načteno oblíbených: {len(self.favorites)}")
+            self.status_var.set(tr("Načteno oblíbených: {0}").format(len(self.favorites)))
 
     def show_favorites_popup(self):
         menu = tk.Menu(self, tearoff=False)
@@ -2410,11 +2649,11 @@ class App(tk.Tk):
         menu.tk_popup(tree.winfo_rootx() + 40, tree.winfo_rooty() + 40)
 
     def open_favorite(self, fav, pane=None):
-        self.open_folder(pane or self.active, expand_path(fav["cesta"]), "Složka není dostupná")
+        self.open_folder(pane or self.active, expand_path(fav["cesta"]), tr("Složka není dostupná"))
 
     def open_folder(self, pane, path, error):
         """Check the folder in a thread first: an unreachable network share can block for many seconds."""
-        self.status_var.set(f"Otevírám {path}…")
+        self.status_var.set(tr("Otevírám {0}…").format(path))
 
         def check():
             ok = os.path.isdir(path)
@@ -2424,24 +2663,24 @@ class App(tk.Tk):
 
     def folder_checked(self, pane, path, ok, error):
         if not ok:
-            self.status_var.set("Připraveno")
+            self.status_var.set(tr("Připraveno"))
             messagebox.showerror("Dvojpanel", f"{error}:\n{path}")
             return
         pane.load(path)
-        self.status_var.set("Připraveno")
+        self.status_var.set(tr("Připraveno"))
         if pane is self.active:
             pane.tree.focus_set()
 
     def add_favorite(self):
         favorites, error = load_favorites()
         if error:  # never overwrite a file the user has to fix by hand
-            messagebox.showerror("Oblíbené", error)
+            messagebox.showerror(tr("Oblíbené"), error)
             return
         path = self.active.path
         if any(os.path.normcase(expand_path(f["cesta"])) == os.path.normcase(path) for f in favorites):
-            messagebox.showinfo("Oblíbené", f"Složka už v oblíbených je:\n{path}")
+            messagebox.showinfo(tr("Oblíbené"), tr("Složka už v oblíbených je:\n{0}").format(path))
             return
-        name = simpledialog.askstring("Přidat do oblíbených", "Název:",
+        name = simpledialog.askstring(tr("Přidat do oblíbených"), tr("Název:"),
                                       initialvalue=os.path.basename(path) or path, parent=self)
         if name is None:
             return
@@ -2451,12 +2690,12 @@ class App(tk.Tk):
     def remove_favorite(self, fav):
         favorites, error = load_favorites()
         if error:
-            messagebox.showerror("Oblíbené", error)
+            messagebox.showerror(tr("Oblíbené"), error)
             return
         if fav not in favorites:
             self.reload_favorites()
             return
-        if messagebox.askyesno("Oblíbené", f"Odebrat z oblíbených?\n{fav.get('nazev') or fav['cesta']}"):
+        if messagebox.askyesno(tr("Oblíbené"), tr("Odebrat z oblíbených?\n{0}").format(fav.get('nazev') or fav['cesta'])):
             favorites.remove(fav)
             self.store_favorites(favorites)
 
@@ -2464,7 +2703,7 @@ class App(tk.Tk):
         try:
             save_favorites(favorites)
         except OSError as e:
-            messagebox.showerror("Oblíbené", f"Nelze uložit oblibene.json:\n{e}")
+            messagebox.showerror(tr("Oblíbené"), tr("Nelze uložit oblibene.json:\n{0}").format(e))
         self.reload_favorites(startup=True)
 
     def edit_favorites(self):
@@ -2472,7 +2711,7 @@ class App(tk.Tk):
             try:
                 save_favorites([])
             except OSError as e:
-                messagebox.showerror("Oblíbené", f"Nelze vytvořit oblibene.json:\n{e}")
+                messagebox.showerror(tr("Oblíbené"), tr("Nelze vytvořit oblibene.json:\n{0}").format(e))
                 return
         subprocess.Popen(["notepad.exe" if IS_WINDOWS else "xdg-open", str(FAVORITES_FILE)])
 
@@ -2501,15 +2740,15 @@ class App(tk.Tk):
                     target = groups[group]
                 target.add_command(label=tool["nazev"], command=lambda t=tool: self.run_tool(t))
         else:
-            menu.add_command(label=self.tools_error or "Žádné nástroje", state="disabled")
+            menu.add_command(label=self.tools_error or tr("Žádné nástroje"), state="disabled")
         menu.add_separator()
-        menu.add_command(label="Upravit nastroje.json", command=self.edit_tools)
-        menu.add_command(label="Načíst nástroje znovu", command=self.reload_tools)
-        menu.add_command(label="Přidat nástroje projektu…", command=self.add_tool_file)
-        menu.add_command(label="Zastavit běžící nástroj", command=self.stop_tool)
-        menu.add_command(label="Vymazat výstup", command=self.clear_log)
+        menu.add_command(label=tr("Upravit nastroje.json"), command=self.edit_tools)
+        menu.add_command(label=tr("Načíst nástroje znovu"), command=self.reload_tools)
+        menu.add_command(label=tr("Přidat nástroje projektu…"), command=self.add_tool_file)
+        menu.add_command(label=tr("Zastavit běžící nástroj"), command=self.stop_tool)
+        menu.add_command(label=tr("Vymazat výstup"), command=self.clear_log)
         menu.add_separator()
-        menu.add_command(label="Nápověda k nástrojům", command=lambda: self.show_help(MY_TOOLS))
+        menu.add_command(label=tr("Nápověda k nástrojům"), command=lambda: self.show_help(MY_TOOLS))
 
     def reload_tools(self, startup=False):
         self.tools, self.tools_error = load_tools()
@@ -2517,9 +2756,9 @@ class App(tk.Tk):
         if self.tools_error:
             self.log(f"⚠ {self.tools_error}\n")
             if not startup:
-                messagebox.showerror("Nástroje", self.tools_error)
+                messagebox.showerror(tr("Nástroje"), self.tools_error)
         elif not startup:
-            self.status_var.set(f"Načteno nástrojů: {len(self.tools)}")
+            self.status_var.set(tr("Načteno nástrojů: {0}").format(len(self.tools)))
 
     def add_tool_file(self):
         """Pick a project's tool file (dvojpanel_nastroje.json) and add it to "vlozit" in nastroje.json."""
@@ -2528,41 +2767,41 @@ class App(tk.Tk):
         try:
             data = json.loads(CONFIG_FILE.read_text(encoding="utf-8-sig"))
             if not isinstance(data, dict):
-                raise ValueError("soubor musí obsahovat objekt { … }")
+                raise ValueError(tr("soubor musí obsahovat objekt { … }"))
         except (OSError, ValueError) as e:  # never overwrite a file the user has to fix by hand
-            messagebox.showerror("Nástroje", f"nastroje.json nelze upravit, oprav ho nejdřív ručně:\n{e}")
+            messagebox.showerror(tr("Nástroje"), tr("nastroje.json nelze upravit, oprav ho nejdřív ručně:\n{0}").format(e))
             return
         path = filedialog.askopenfilename(
-            parent=self, title="Vyber soubor nástrojů projektu (dvojpanel_nastroje.json)",
-            initialdir=self.active.path, filetypes=[("Soubor nástrojů (*.json)", "*.json"),
-                                                    ("Všechny soubory", "*.*")])
+            parent=self, title=tr("Vyber soubor nástrojů projektu (dvojpanel_nastroje.json)"),
+            initialdir=self.active.path, filetypes=[(tr("Soubor nástrojů (*.json)"), "*.json"),
+                                                    (tr("Všechny soubory"), "*.*")])
         if not path:
             return
         path = os.path.normpath(path)
         try:
             inc = json.loads(Path(path).read_text(encoding="utf-8-sig"))
             if isinstance(inc, dict) and "vlozit" in inc:
-                raise ValueError("vložený soubor nesmí dál vkládat ('vlozit')")
+                raise ValueError(tr("vložený soubor nesmí dál vkládat ('vlozit')"))
             found = parse_tools(inc, os.path.basename(path), os.path.dirname(path))
             if not found:
-                raise ValueError("neobsahuje žádné nástroje ('nastroje': [...])")
+                raise ValueError(tr("neobsahuje žádné nástroje ('nastroje': [...])"))
         except (OSError, ValueError) as e:
-            messagebox.showerror("Nástroje", f"Tohle není soubor nástrojů:\n{path}\n\n{e}")
+            messagebox.showerror(tr("Nástroje"), tr("Tohle není soubor nástrojů:\n{0}\n\n{1}").format(path, e))
             return
         includes = data.get("vlozit", [])
         includes = [includes] if isinstance(includes, str) else list(includes)
         if any(os.path.normcase(expand_path(i)) == os.path.normcase(path) for i in includes):
-            messagebox.showinfo("Nástroje", f"Tento soubor už je vložený:\n{path}")
+            messagebox.showinfo(tr("Nástroje"), tr("Tento soubor už je vložený:\n{0}").format(path))
             self.reload_tools()
             return
         data["vlozit"] = includes + [path.replace("\\", "/")]
         try:
             write_json(CONFIG_FILE, data)
         except OSError as e:
-            messagebox.showerror("Nástroje", f"Nelze uložit nastroje.json:\n{e}")
+            messagebox.showerror(tr("Nástroje"), tr("Nelze uložit nastroje.json:\n{0}").format(e))
             return
         self.reload_tools()
-        messagebox.showinfo("Nástroje", f"Přidáno {len(found)} nástrojů z:\n{path}")
+        messagebox.showinfo(tr("Nástroje"), tr("Přidáno {0} nástrojů z:\n{1}").format(len(found), path))
 
     def show_tools_popup(self):
         menu = tk.Menu(self, tearoff=False)
@@ -2578,8 +2817,8 @@ class App(tk.Tk):
 
     def run_tool(self, tool):
         if self.proc is not None:
-            messagebox.showinfo("Nástroj běží",
-                                "Počkej, až doběhne předchozí nástroj, nebo ho zastav v menu Nástroje.")
+            messagebox.showinfo(tr("Nástroj běží"),
+                                tr("Počkej, až doběhne předchozí nástroj, nebo ho zastav v menu Nástroje."))
             return
         pane = self.active
         files = [p for p in pane.selected_paths() if os.path.isfile(p)]
@@ -2599,8 +2838,7 @@ class App(tk.Tk):
                 checked.append(ctx["soubor_cil"])
             wrong = [os.path.basename(f) for f in checked if os.path.splitext(f)[1].lower() not in exts]
             if wrong:
-                messagebox.showwarning(tool["nazev"], f"Nástroj přijímá jen: {', '.join(exts)}\n\n"
-                                       f"Nevyhovuje: {', '.join(wrong[:5])}")
+                messagebox.showwarning(tool["nazev"], tr("Nástroj přijímá jen: {0}\n\nNevyhovuje: {1}").format(', '.join(exts), ', '.join(wrong[:5])))
                 return
         def ask(label):
             return simpledialog.askstring(tool["nazev"], f"{label}:", parent=self)
@@ -2624,24 +2862,45 @@ class App(tk.Tk):
         else:
             self.start_tool(tool, cmd, cwd)
 
-    def start_tool(self, tool, cmd, cwd, real=None):
-        """Run a tool; real=(cmd, cwd) makes this the preview whose result asks before the real run."""
+    def git_pull(self):
+        """Ctrl+G: git pull in the repository the active pane's folder belongs to; output goes to the log."""
+        if self.proc is not None:
+            messagebox.showinfo(tr("Nástroj běží"),
+                                tr("Počkej, až doběhne předchozí nástroj, nebo ho zastav v menu Nástroje."))
+            return
+        folder = self.active.path
+        root = find_git_root(folder)
+        if root is None:
+            messagebox.showwarning("Git pull", tr("Tato složka není v repozitáři gitu:\n{0}").format(folder))
+            return
+        git = shutil.which("git")
+        if git is None:
+            messagebox.showerror("Git pull", tr("Program git nebyl nalezen (není nainstalovaný nebo "
+                                                "není v PATH)."))
+            return
+        # --ff-only: never merges or rewrites local work; there is no console, so git must not ask there
+        self.start_tool(GIT_PULL, [git, "pull", "--ff-only"], root, env={"GIT_TERMINAL_PROMPT": "0"})
+
+    def start_tool(self, tool, cmd, cwd, real=None, env=None):
+        """Run a tool; real=(cmd, cwd) makes this the preview whose result asks before the real run.
+        env adds environment variables."""
         line = cmd if isinstance(cmd, str) else subprocess.list2cmdline(cmd)
-        title = f"{tool['nazev']} – náhled" if real else tool["nazev"]
-        self.log(f"\n▶ {title}\n  {line}\n  (složka: {cwd})\n")
-        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", DVOJPANEL=__version__)
+        title = tr("{0} – náhled").format(tool['nazev']) if real else tool["nazev"]
+        self.log(tr("\n▶ {0}\n  {1}\n  (složka: {2})\n").format(title, line, cwd))
+        env = dict(os.environ, PYTHONIOENCODING="utf-8", PYTHONUNBUFFERED="1", DVOJPANEL=__version__,
+                   **(env or {}))
         try:
             # stdin is a pipe: when the tool asks something (input()), the answer comes from a window
             proc = subprocess.Popen(
                 cmd, cwd=cwd, env=env, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
         except OSError as e:
-            self.log(f"  Nelze spustit: {e}\n")
+            self.log(tr("  Nelze spustit: {0}\n").format(e))
             return
         self.proc = proc
         self.tool_out, self.tool_lines, self.tool_no_change = "", [], False
         self.tool_title = title
-        self.status_var.set(f"Běží: {title}")
+        self.status_var.set(tr("Běží: {0}").format(title))
 
         def reader():
             # raw chunks, not lines: a prompt like "Volba [1]: " has no line end
@@ -2649,7 +2908,7 @@ class App(tk.Tk):
             while chunk := proc.stdout.read1(4096):
                 self.jobs.put(("out", (proc, decoder.decode(chunk))))
             self.jobs.put(("out", (proc, decoder.decode(b"", final=True))))
-            self.jobs.put(("tool_done", (tool, proc.wait(), real)))
+            self.jobs.put(("tool_done", (tool, proc.wait(), real, cwd)))
 
         threading.Thread(target=reader, daemon=True).start()
 
@@ -2695,7 +2954,7 @@ class App(tk.Tk):
             context = [ln for ln in self.tool_lines[-14:]]
             while context and not context[0].strip():
                 context.pop(0)
-            self.status_var.set("Nástroj čeká na zadání")
+            self.status_var.set(tr("Nástroj čeká na zadání"))
             answer = ask_tool_input(self, self.tool_title, context, prompt)
             if proc is not self.proc:  # the tool ended while the window was open
                 return
@@ -2705,13 +2964,13 @@ class App(tk.Tk):
             try:
                 if answer is None:
                     proc.stdin.close()
-                    self.log("  (vstup ukončen)\n")
+                    self.log(tr("  (vstup ukončen)\n"))
                 else:
                     proc.stdin.write((answer.replace("\r\n", "\n") + "\n").encode("utf-8"))
                     proc.stdin.flush()
             except (OSError, ValueError):  # the tool has just ended
                 pass
-            self.status_var.set(f"Běží: {self.tool_title}")
+            self.status_var.set(tr("Běží: {0}").format(self.tool_title))
         finally:
             self.tool_asking = False
             self.tool_out_time = time.monotonic()
@@ -2723,7 +2982,7 @@ class App(tk.Tk):
         if not folder or not os.path.isdir(folder):
             folder = self.active.path
         types = [(f"{label} ({' '.join(exts)})", " ".join("*" + e for e in exts))] if exts else []
-        types.append(("Všechny soubory", "*.*"))
+        types.append((tr("Všechny soubory"), "*.*"))
         options = dict(parent=self, title=f"{tool['nazev']}: {label}", initialdir=folder, filetypes=types)
         if kind == "open":
             path = filedialog.askopenfilename(**options)
@@ -2733,13 +2992,12 @@ class App(tk.Tk):
             return None
         path = os.path.normpath(path)
         if exts and os.path.splitext(path)[1].lower() not in exts:
-            messagebox.showwarning(tool["nazev"], f"{label}: nástroj přijímá jen {', '.join(exts)}\n\n"
-                                   f"Nevyhovuje: {os.path.basename(path)}")
+            messagebox.showwarning(tool["nazev"], tr("{0}: nástroj přijímá jen {1}\n\nNevyhovuje: {2}").format(label, ', '.join(exts), os.path.basename(path)))
             return None
         self.last_dirs[key] = os.path.dirname(path)
         return path
 
-    def finish_tool(self, tool, returncode, real=None):
+    def finish_tool(self, tool, returncode, real=None, cwd=None):
         rest, self.tool_out = self.tool_out.rstrip("\r"), ""
         if rest:
             self.log_tool_line(rest)
@@ -2753,39 +3011,49 @@ class App(tk.Tk):
             self.finish_preview(tool, returncode, real, no_change)
             return
         if returncode == 0:
-            self.log("■ Hotovo\n")
-            self.status_var.set(f"{tool['nazev']}: hotovo")
+            self.log(tr("■ Hotovo\n"))
+            self.status_var.set(tr("{0}: hotovo").format(tool['nazev']))
         else:
-            self.log(f"■ Skončilo s chybou (návratový kód {returncode})\n")
-            self.status_var.set(f"{tool['nazev']}: chyba {returncode}")
+            self.log(tr("■ Skončilo s chybou (návratový kód {0})\n").format(returncode))
+            self.status_var.set(tr("{0}: chyba {1}").format(tool['nazev'], returncode))
         self.reload_both()
+        if returncode == 0 and tool is GIT_PULL:
+            self.after_git_pull(cwd)
         if returncode == 0 and tool.get("zobrazit_slozku"):
             folder = tool_path(tool, tool["zobrazit_slozku"])
             if os.path.isdir(folder):
                 self.other.load(folder)
 
+    def after_git_pull(self, root):
+        """A pull may bring new project tools (included tool files) or a new Dvojpanel."""
+        self.reload_tools(startup=True)  # problems go to the log, without a dialog
+        new = file_version(APP_DIR / "dvojpanel.py")
+        if root and same_folder(root, APP_DIR) and new and new != __version__:
+            self.log(tr("  Dvojpanel je aktualizován na verzi {0}, běží ještě {1}. Nová verze platí "
+                        "po novém spuštění programu.\n").format(new, __version__))
+
     def finish_preview(self, tool, returncode, real, no_change):
         self.reload_both()
         if returncode not in PREVIEW_OK:
-            self.log(f"■ Náhled skončil s chybou (návratový kód {returncode}), nic se nezapisuje.\n")
-            self.status_var.set(f"{tool['nazev']}: chyba {returncode}")
+            self.log(tr("■ Náhled skončil s chybou (návratový kód {0}), nic se nezapisuje.\n").format(returncode))
+            self.status_var.set(tr("{0}: chyba {1}").format(tool['nazev'], returncode))
             return
         if no_change:
-            self.log("■ Náhled: beze změn, není co zapsat.\n")
-            self.status_var.set(f"{tool['nazev']}: beze změn")
+            self.log(tr("■ Náhled: beze změn, není co zapsat.\n"))
+            self.status_var.set(tr("{0}: beze změn").format(tool['nazev']))
             return
-        self.log(f"■ Náhled hotov (návratový kód {returncode})\n")
-        self.status_var.set(f"{tool['nazev']}: čeká na potvrzení")
-        if messagebox.askyesno(tool["nazev"], "Náhled změn je v dolním panelu.\n\nProvést změny naostro?"):
+        self.log(tr("■ Náhled hotov (návratový kód {0})\n").format(returncode))
+        self.status_var.set(tr("{0}: čeká na potvrzení").format(tool['nazev']))
+        if messagebox.askyesno(tool["nazev"], tr("Náhled změn je v dolním panelu.\n\nProvést změny naostro?")):
             self.start_tool(tool, *real)
         else:
-            self.log("  Zrušeno, nic se nezapsalo.\n")
-            self.status_var.set(f"{tool['nazev']}: zrušeno")
+            self.log(tr("  Zrušeno, nic se nezapsalo.\n"))
+            self.status_var.set(tr("{0}: zrušeno").format(tool['nazev']))
 
     def stop_tool(self):
         if self.proc is not None:
             self.proc.terminate()
-            self.log("  Zastavuji nástroj…\n")
+            self.log(tr("  Zastavuji nástroj…\n"))
 
     def log(self, text):
         self.log_text.configure(state="normal")
@@ -2800,7 +3068,7 @@ class App(tk.Tk):
 
     def on_close(self):
         if self.proc is not None:
-            if not messagebox.askyesno("Nástroj běží", "Nástroj stále běží. Ukončit ho a zavřít?"):
+            if not messagebox.askyesno(tr("Nástroj běží"), tr("Nástroj stále běží. Ukončit ho a zavřít?")):
                 return
             self.proc.terminate()
         self.destroy()

@@ -16,7 +16,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 REPO = HERE.parent
-FILES = ["dvojpanel.py", "dvojpanel.ico", "nastroje.example.json", "README.md", "CHANGELOG.md"]
+FILES = ["dvojpanel.py", "dvojpanel.ico", "nastroje.example.json", "README.md", "CHANGELOG.md", "preklady.json"]
 
 
 def main():

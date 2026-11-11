@@ -1,0 +1,1933 @@
+{
+ "jazyky": [
+  "en",
+  "de",
+  "pl"
+ ],
+ "texty": {
+  "Složka": [
+   "Folder",
+   "Ordner",
+   "Folder"
+  ],
+  "Soubor": [
+   "File",
+   "Datei",
+   "Plik"
+  ],
+  "Soubor {0}": [
+   "{0} file",
+   "{0}-Datei",
+   "Plik {0}"
+  ],
+  "Název nesmí být prázdný.": [
+   "The name must not be empty.",
+   "Der Name darf nicht leer sein.",
+   "Nazwa nie może być pusta."
+  ],
+  "Název nesmí obsahovat znaky: {0}": [
+   "The name must not contain the characters: {0}",
+   "Der Name darf diese Zeichen nicht enthalten: {0}",
+   "Nazwa nie może zawierać znaków: {0}"
+  ],
+  "Název nesmí končit mezerou ani tečkou.": [
+   "The name must not end with a space or a dot.",
+   "Der Name darf nicht mit einem Leerzeichen oder Punkt enden.",
+   "Nazwa nie może kończyć się spacją ani kropką."
+  ],
+  "Položka s tímto názvem už existuje:\n{0}": [
+   "An item with this name already exists:\n{0}",
+   "Ein Element mit diesem Namen existiert bereits:\n{0}",
+   "Element o tej nazwie już istnieje:\n{0}"
+  ],
+  "Koš je podporován jen ve Windows.": [
+   "The Recycle Bin is supported on Windows only.",
+   "Der Papierkorb wird nur unter Windows unterstützt.",
+   "Kosz jest obsługiwany tylko w systemie Windows."
+  ],
+  "Mazání selhalo (kód {0:#x}).": [
+   "Deleting failed (code {0:#x}).",
+   "Löschen fehlgeschlagen (Code {0:#x}).",
+   "Usuwanie nie powiodło się (kod {0:#x})."
+  ],
+  "Nelze spustit PowerShell: {0}": [
+   "Cannot start PowerShell: {0}",
+   "PowerShell kann nicht gestartet werden: {0}",
+   "Nie można uruchomić PowerShella: {0}"
+  ],
+  "PowerShell zástupce nevytvořil.": [
+   "PowerShell did not create the shortcut.",
+   "PowerShell hat die Verknüpfung nicht erstellt.",
+   "PowerShell nie utworzył skrótu."
+  ],
+  "Kopíruji": [
+   "Copying",
+   "Kopiere",
+   "Kopiuję"
+  ],
+  "Přesouvám": [
+   "Moving",
+   "Verschiebe",
+   "Przenoszę"
+  ],
+  "{0}: v cíli existuje položka jiného typu": [
+   "{0}: an item of a different type exists in the target",
+   "{0}: im Ziel existiert ein Element anderen Typs",
+   "{0}: w miejscu docelowym istnieje element innego typu"
+  ],
+  "Přerušeno uživatelem.": [
+   "Cancelled by the user.",
+   "Vom Benutzer abgebrochen.",
+   "Przerwane przez użytkownika."
+  ],
+  "Mažu {0} položek…": [
+   "Deleting {0} items…",
+   "Lösche {0} Elemente…",
+   "Usuwam elementy: {0}…"
+  ],
+  "Načítám levou složku…": [
+   "Reading the left folder…",
+   "Lese linken Ordner…",
+   "Wczytuję lewy folder…"
+  ],
+  "Načítám pravou složku…": [
+   "Reading the right folder…",
+   "Lese rechten Ordner…",
+   "Wczytuję prawy folder…"
+  ],
+  "Porovnávám {0}/{1}: {2}": [
+   "Comparing {0}/{1}: {2}",
+   "Vergleiche {0}/{1}: {2}",
+   "Porównuję {0}/{1}: {2}"
+  ],
+  "Porovnávám {0}/{1}: {2} – {3} %": [
+   "Comparing {0}/{1}: {2} – {3} %",
+   "Vergleiche {0}/{1}: {2} – {3} %",
+   "Porównuję {0}/{1}: {2} – {3} %"
+  ],
+  "Synchronizuji {0}/{1}": [
+   "Synchronizing {0}/{1}",
+   "Synchronisiere {0}/{1}",
+   "Synchronizuję {0}/{1}"
+  ],
+  "Chyba v oblibene.json: {0}": [
+   "Error in oblibene.json: {0}",
+   "Fehler in oblibene.json: {0}",
+   "Błąd w oblibene.json: {0}"
+  ],
+  "oblibene.json: položka č. {0} musí mít 'cesta'.": [
+   "oblibene.json: item no. {0} must have 'cesta'.",
+   "oblibene.json: Eintrag Nr. {0} muss 'cesta' enthalten.",
+   "oblibene.json: pozycja nr {0} musi mieć 'cesta'."
+  ],
+  "Chyba v dvojpanel.json: {0}": [
+   "Error in dvojpanel.json: {0}",
+   "Fehler in dvojpanel.json: {0}",
+   "Błąd w dvojpanel.json: {0}"
+  ],
+  "dvojpanel.json musí obsahovat objekt { … }.": [
+   "dvojpanel.json must contain an object { … }.",
+   "dvojpanel.json muss ein Objekt { … } enthalten.",
+   "dvojpanel.json musi zawierać obiekt { … }."
+  ],
+  "dvojpanel.json: '{0}' musí být cesta ke složce.": [
+   "dvojpanel.json: '{0}' must be a path to a folder.",
+   "dvojpanel.json: '{0}' muss ein Ordnerpfad sein.",
+   "dvojpanel.json: '{0}' musi być ścieżką do folderu."
+  ],
+  "dvojpanel.json: 'lista_oblibenych' musí být true nebo false.": [
+   "dvojpanel.json: 'lista_oblibenych' must be true or false.",
+   "dvojpanel.json: 'lista_oblibenych' muss true oder false sein.",
+   "dvojpanel.json: 'lista_oblibenych' musi mieć wartość true lub false."
+  ],
+  "dvojpanel.json: 'velikost_pisma' musí být celé číslo {0} až {1} (výchozí je {2}).": [
+   "dvojpanel.json: 'velikost_pisma' must be a whole number from {0} to {1} (the default is {2}).",
+   "dvojpanel.json: 'velikost_pisma' muss eine ganze Zahl von {0} bis {1} sein (Standard ist {2}).",
+   "dvojpanel.json: 'velikost_pisma' musi być liczbą całkowitą od {0} do {1} (domyślnie {2})."
+  ],
+  "dvojpanel.json: 'jazyk' musí být jedna z hodnot: {0}.": [
+   "dvojpanel.json: 'jazyk' must be one of: {0}.",
+   "dvojpanel.json: 'jazyk' muss einer dieser Werte sein: {0}.",
+   "dvojpanel.json: 'jazyk' musi być jedną z wartości: {0}."
+  ],
+  "dvojpanel.json obsahuje chybu, oprav ho nejdřív ručně.": [
+   "dvojpanel.json contains an error, fix it by hand first.",
+   "dvojpanel.json enthält einen Fehler, bitte zuerst von Hand korrigieren.",
+   "dvojpanel.json zawiera błąd, najpierw popraw go ręcznie."
+  ],
+  "Nelze vytvořit nastroje.json: {0}": [
+   "Cannot create nastroje.json: {0}",
+   "nastroje.json kann nicht erstellt werden: {0}",
+   "Nie można utworzyć nastroje.json: {0}"
+  ],
+  "Chybí soubor nastroje.json.": [
+   "The file nastroje.json is missing.",
+   "Die Datei nastroje.json fehlt.",
+   "Brak pliku nastroje.json."
+  ],
+  "Chyba v nastroje.json: {0}": [
+   "Error in nastroje.json: {0}",
+   "Fehler in nastroje.json: {0}",
+   "Błąd w nastroje.json: {0}"
+  ],
+  "vložený soubor nesmí dál vkládat ('vlozit')": [
+   "an included file must not include further files ('vlozit')",
+   "eine eingebundene Datei darf keine weiteren einbinden ('vlozit')",
+   "dołączony plik nie może dołączać kolejnych ('vlozit')"
+  ],
+  "Vložený soubor nástrojů neexistuje:\n{0}\nOprava: Nástroje → Přidat nástroje projektu… a vyber jeho dvojpanel_nastroje.json.": [
+   "The included tool file does not exist:\n{0}\nFix: Tools → Add project tools… and pick its dvojpanel_nastroje.json.",
+   "Die eingebundene Tool-Datei existiert nicht:\n{0}\nAbhilfe: Tools → Projekt-Tools hinzufügen… und dessen dvojpanel_nastroje.json wählen.",
+   "Dołączony plik narzędzi nie istnieje:\n{0}\nNaprawa: Narzędzia → Dodaj narzędzia projektu… i wybierz jego dvojpanel_nastroje.json."
+  ],
+  "Chyba ve vloženém souboru nástrojů {0}:\n{1}": [
+   "Error in the included tool file {0}:\n{1}",
+   "Fehler in der eingebundenen Tool-Datei {0}:\n{1}",
+   "Błąd w dołączonym pliku narzędzi {0}:\n{1}"
+  ],
+  "{0}: 'nastroje' musí být seznam.": [
+   "{0}: 'nastroje' must be a list.",
+   "{0}: 'nastroje' muss eine Liste sein.",
+   "{0}: 'nastroje' musi być listą."
+  ],
+  "{0}: nástroj č. {1} musí mít 'nazev' a 'skript'.": [
+   "{0}: tool no. {1} must have 'nazev' and 'skript'.",
+   "{0}: Tool Nr. {1} muss 'nazev' und 'skript' enthalten.",
+   "{0}: narzędzie nr {1} musi mieć 'nazev' i 'skript'."
+  ],
+  "Pod kurzorem v aktivním panelu není soubor.": [
+   "There is no file under the cursor in the active pane.",
+   "Unter dem Cursor im aktiven Panel ist keine Datei.",
+   "Pod kursorem w aktywnym panelu nie ma pliku."
+  ],
+  "Pod kurzorem ve druhém panelu není soubor.": [
+   "There is no file under the cursor in the other pane.",
+   "Unter dem Cursor im anderen Panel ist keine Datei.",
+   "Pod kursorem w drugim panelu nie ma pliku."
+  ],
+  "Vyber soubor": [
+   "Choose a file",
+   "Datei wählen",
+   "Wybierz plik"
+  ],
+  "Uložit jako": [
+   "Save as",
+   "Speichern unter",
+   "Zapisz jako"
+  ],
+  "Skript neexistuje:\n{0}": [
+   "The script does not exist:\n{0}",
+   "Das Skript existiert nicht:\n{0}",
+   "Skrypt nie istnieje:\n{0}"
+  ],
+  "Hodnota": [
+   "Value",
+   "Wert",
+   "Wartość"
+  ],
+  "{{{0}}} tu nelze použít.": [
+   "{{{0}}} cannot be used here.",
+   "{{{0}}} kann hier nicht verwendet werden.",
+   "{{{0}}} nie można tu użyć."
+  ],
+  "Neznámý zástupný symbol {{{0}}} v nástroji „{1}“.": [
+   "Unknown placeholder {{{0}}} in the tool “{1}”.",
+   "Unbekannter Platzhalter {{{0}}} im Tool „{1}“.",
+   "Nieznany symbol zastępczy {{{0}}} w narzędziu „{1}”."
+  ],
+  "Pro {{{0}}} není nic vybráno.": [
+   "Nothing is selected for {{{0}}}.",
+   "Für {{{0}}} ist nichts ausgewählt.",
+   "Dla {{{0}}} nic nie jest wybrane."
+  ],
+  "Nástroj potřebuje vybrané soubory, ale žádný není vybrán.": [
+   "The tool needs selected files, but none is selected.",
+   "Das Tool braucht ausgewählte Dateien, aber keine ist ausgewählt.",
+   "Narzędzie wymaga wybranych plików, ale żaden nie jest wybrany."
+  ],
+  "Položky už existují": [
+   "Items already exist",
+   "Elemente existieren bereits",
+   "Elementy już istnieją"
+  ],
+  "Přepsat jen starší": [
+   "Overwrite older only",
+   "Nur ältere überschreiben",
+   "Zastąp tylko starsze"
+  ],
+  "Přepsat vše": [
+   "Overwrite all",
+   "Alle überschreiben",
+   "Zastąp wszystko"
+  ],
+  "Přeskočit existující": [
+   "Skip existing",
+   "Vorhandene überspringen",
+   "Pomiń istniejące"
+  ],
+  "Storno": [
+   "Cancel",
+   "Abbrechen",
+   "Anuluj"
+  ],
+  "V cíli už existuje {0} z {1} položek.": [
+   "{0} of {1} items already exist in the target.",
+   "{0} von {1} Elementen existieren bereits im Ziel.",
+   "W miejscu docelowym istnieje już {0} z {1} elementów."
+  ],
+  "POZOR: v cíli je NOVĚJŠÍ verze u {0} souborů:": [
+   "WARNING: the target has a NEWER version of {0} files:",
+   "ACHTUNG: im Ziel liegt eine NEUERE Version von {0} Dateien:",
+   "UWAGA: w miejscu docelowym jest NOWSZA wersja {0} plików:"
+  ],
+  "   {0}\n        v cíli {1}   ×   kopírovaný {2}": [
+   "   {0}\n        in the target {1}   ×   being copied {2}",
+   "   {0}\n        im Ziel {1}   ×   kopiert wird {2}",
+   "   {0}\n        docelowy {1}   ×   kopiowany {2}"
+  ],
+  "   … a dalších {0}": [
+   "   … and {0} more",
+   "   … und {0} weitere",
+   "   … i jeszcze {0}"
+  ],
+  "Žádný z existujících souborů není v cíli novější.": [
+   "None of the existing files is newer in the target.",
+   "Keine der vorhandenen Dateien ist im Ziel neuer.",
+   "Żaden z istniejących plików nie jest nowszy w miejscu docelowym."
+  ],
+  "Složky ({0}) se sloučí; volba platí pro každý soubor uvnitř.": [
+   "Folders ({0}) are merged; the choice applies to every file inside.",
+   "Ordner ({0}) werden zusammengeführt; die Wahl gilt für jede Datei darin.",
+   "Foldery ({0}) zostaną scalone; wybór dotyczy każdego pliku w środku."
+  ],
+  "Přepsat jen starší – nahradí jen soubory, které jsou v cíli starší;": [
+   "Overwrite older only – replaces only files that are older in the target;",
+   "Nur ältere überschreiben – ersetzt nur Dateien, die im Ziel älter sind;",
+   "Zastąp tylko starsze – zastępuje tylko pliki, które w miejscu docelowym są starsze;"
+  ],
+  "        novější a stejně staré v cíli zůstanou (při přesunu i ve zdroji)": [
+   "        newer and equally old ones stay in the target (when moving, also in the source)",
+   "        neuere und gleich alte bleiben im Ziel (beim Verschieben auch in der Quelle)",
+   "        nowsze i tak samo stare pozostają (przy przenoszeniu także w źródle)"
+  ],
+  "Přepsat vše – nahradí všechny existující soubory, i novější": [
+   "Overwrite all – replaces all existing files, newer ones too",
+   "Alle überschreiben – ersetzt alle vorhandenen Dateien, auch neuere",
+   "Zastąp wszystko – zastępuje wszystkie istniejące pliki, także nowsze"
+  ],
+  "Přeskočit existující – existující položky se nezmění": [
+   "Skip existing – existing items are not changed",
+   "Vorhandene überspringen – vorhandene Elemente bleiben unverändert",
+   "Pomiń istniejące – istniejące elementy pozostają bez zmian"
+  ],
+  "{0} – zadání": [
+   "{0} – input",
+   "{0} – Eingabe",
+   "{0} – wprowadzanie"
+  ],
+  "Nástroj vypsal:": [
+   "The tool printed:",
+   "Ausgabe des Tools:",
+   "Narzędzie wypisało:"
+  ],
+  "Nástroj čeká na vstup:": [
+   "The tool is waiting for input:",
+   "Das Tool wartet auf eine Eingabe:",
+   "Narzędzie czeka na dane:"
+  ],
+  "Enter = odeslat (i prázdné = výchozí volba nástroje)   Esc = ukončit vstup": [
+   "Enter = send (empty = the tool's default choice)   Esc = end the input",
+   "Enter = senden (leer = Standardwahl des Tools)   Esc = Eingabe beenden",
+   "Enter = wyślij (puste = domyślny wybór narzędzia)   Esc = zakończ wprowadzanie"
+  ],
+  "Odeslat": [
+   "Send",
+   "Senden",
+   "Wyślij"
+  ],
+  "Ukončit vstup": [
+   "End input",
+   "Eingabe beenden",
+   "Zakończ wprowadzanie"
+  ],
+  "Název": [
+   "Name",
+   "Name",
+   "Nazwa"
+  ],
+  "Typ": [
+   "Type",
+   "Typ",
+   "Typ"
+  ],
+  "Velikost": [
+   "Size",
+   "Größe",
+   "Rozmiar"
+  ],
+  "Změněno": [
+   "Modified",
+   "Geändert",
+   "Zmieniono"
+  ],
+  "Chyba": [
+   "Error",
+   "Fehler",
+   "Błąd"
+  ],
+  "Nelze otevřít:\n{0}\n\n{1}": [
+   "Cannot open:\n{0}\n\n{1}",
+   "Kann nicht geöffnet werden:\n{0}\n\n{1}",
+   "Nie można otworzyć:\n{0}\n\n{1}"
+  ],
+  "Označeno": [
+   "Marked",
+   "Markiert",
+   "Zaznaczono"
+  ],
+  "Vybráno": [
+   "Selected",
+   "Ausgewählt",
+   "Wybrano"
+  ],
+  "jen vlevo": [
+   "left only",
+   "nur links",
+   "tylko po lewej"
+  ],
+  "liší se": [
+   "different",
+   "verschieden",
+   "różne"
+  ],
+  "stejné": [
+   "same",
+   "gleich",
+   "takie same"
+  ],
+  "jen vpravo": [
+   "right only",
+   "nur rechts",
+   "tylko po prawej"
+  ],
+  "soubor × složka": [
+   "file × folder",
+   "Datei × Ordner",
+   "plik × folder"
+  ],
+  "Porovnat a synchronizovat složky": [
+   "Compare and synchronize folders",
+   "Ordner vergleichen und synchronisieren",
+   "Porównaj i synchronizuj foldery"
+  ],
+  "Levá:": [
+   "Left:",
+   "Links:",
+   "Lewy:"
+  ],
+  "Pravá:": [
+   "Right:",
+   "Rechts:",
+   "Prawy:"
+  ],
+  "Včetně podsložek": [
+   "Include subfolders",
+   "Mit Unterordnern",
+   "Z podfolderami"
+  ],
+  "Porovnat obsah binárně (jinak jen velikost a čas)": [
+   "Compare contents byte by byte (otherwise only size and time)",
+   "Inhalt binär vergleichen (sonst nur Größe und Zeit)",
+   "Porównaj zawartość binarnie (inaczej tylko rozmiar i czas)"
+  ],
+  "Zobrazit stejné": [
+   "Show same",
+   "Gleiche anzeigen",
+   "Pokaż takie same"
+  ],
+  "Porovnat": [
+   "Compare",
+   "Vergleichen",
+   "Porównaj"
+  ],
+  "Cesta": [
+   "Path",
+   "Pfad",
+   "Ścieżka"
+  ],
+  "Vlevo": [
+   "Left",
+   "Links",
+   "Lewy"
+  ],
+  "Akce": [
+   "Action",
+   "Aktion",
+   "Akcja"
+  ],
+  "Změněno vlevo": [
+   "Modified left",
+   "Geändert links",
+   "Zmieniono po lewej"
+  ],
+  "Vpravo": [
+   "Right",
+   "Rechts",
+   "Prawy"
+  ],
+  "Změněno vpravo": [
+   "Modified right",
+   "Geändert rechts",
+   "Zmieniono po prawej"
+  ],
+  "Stav": [
+   "Status",
+   "Status",
+   "Stan"
+  ],
+  "→ Kopírovat doprava (→)": [
+   "→ Copy to the right (→)",
+   "→ Nach rechts kopieren (→)",
+   "→ Kopiuj w prawo (→)"
+  ],
+  "← Kopírovat doleva (←)": [
+   "← Copy to the left (←)",
+   "← Nach links kopieren (←)",
+   "← Kopiuj w lewo (←)"
+  ],
+  "Nic nedělat (mezerník)": [
+   "Do nothing (space)",
+   "Nichts tun (Leertaste)",
+   "Nic nie rób (spacja)"
+  ],
+  "Zvol složky a stiskni Porovnat.": [
+   "Choose the folders and press Compare.",
+   "Ordner wählen und Vergleichen drücken.",
+   "Wybierz foldery i naciśnij Porównaj."
+  ],
+  "Zavřít": [
+   "Close",
+   "Schließen",
+   "Zamknij"
+  ],
+  "Přerušit": [
+   "Stop",
+   "Abbrechen",
+   "Przerwij"
+  ],
+  "Synchronizovat": [
+   "Synchronize",
+   "Synchronisieren",
+   "Synchronizuj"
+  ],
+  "Porovnání složek": [
+   "Folder comparison",
+   "Ordnervergleich",
+   "Porównanie folderów"
+  ],
+  "\n… a dalších {0}": [
+   "\n… and {0} more",
+   "\n… und {0} weitere",
+   "\n… i jeszcze {0}"
+  ],
+  "Chyby": [
+   "Errors",
+   "Fehler",
+   "Błędy"
+  ],
+  "Složka neexistuje:\n{0}": [
+   "The folder does not exist:\n{0}",
+   "Der Ordner existiert nicht:\n{0}",
+   "Folder nie istnieje:\n{0}"
+  ],
+  "Složky jsou stejné nebo jedna leží uvnitř druhé.": [
+   "The folders are the same or one lies inside the other.",
+   "Die Ordner sind identisch oder einer liegt im anderen.",
+   "Foldery są takie same albo jeden leży wewnątrz drugiego."
+  ],
+  ", chyb: {0}": [
+   ", errors: {0}",
+   ", Fehler: {0}",
+   ", błędów: {0}"
+  ],
+  "Porovnáno, položek: {0}": [
+   "Compared, items: {0}",
+   "Verglichen, Elemente: {0}",
+   "Porównano, elementów: {0}"
+  ],
+  "Doprava: {0} ({1})   Doleva: {2} ({3})   Bez akce: {4}   Konflikty: {5}   Stejné: {6}": [
+   "To the right: {0} ({1})   To the left: {2} ({3})   No action: {4}   Conflicts: {5}   Same: {6}",
+   "Nach rechts: {0} ({1})   Nach links: {2} ({3})   Ohne Aktion: {4}   Konflikte: {5}   Gleich: {6}",
+   "W prawo: {0} ({1})   W lewo: {2} ({3})   Bez akcji: {4}   Konflikty: {5}   Takie same: {6}"
+  ],
+  "Zkopírovat {0} položek doprava a {1} doleva?\n\n{2}\n⇄ {3}": [
+   "Copy {0} items to the right and {1} to the left?\n\n{2}\n⇄ {3}",
+   "{0} Elemente nach rechts und {1} nach links kopieren?\n\n{2}\n⇄ {3}",
+   "Skopiować {0} elementów w prawo i {1} w lewo?\n\n{2}\n⇄ {3}"
+  ],
+  "\n\nPŘEPÍŠE se {0} existujících souborů, jejich dosavadní obsah se ztratí:\n{1}": [
+   "\n\n{0} existing files WILL BE OVERWRITTEN, their present contents will be lost:\n{1}",
+   "\n\n{0} vorhandene Dateien WERDEN ÜBERSCHRIEBEN, ihr bisheriger Inhalt geht verloren:\n{1}",
+   "\n\nZOSTANIE ZASTĄPIONYCH {0} istniejących plików, ich dotychczasowa zawartość przepadnie:\n{1}"
+  ],
+  "• zeptá se v okně: {0}": [
+   "• asks in a window: {0}",
+   "• fragt in einem Fenster: {0}",
+   "• zapyta w oknie: {0}"
+  ],
+  "vybereš soubor": [
+   "you choose a file",
+   "du wählst eine Datei",
+   "wybierasz plik"
+  ],
+  "zvolíš, kam uložit": [
+   "you choose where to save",
+   "du wählst den Speicherort",
+   "wybierasz, gdzie zapisać"
+  ],
+  "pracuje s označenými / vybranými soubory v aktivním panelu": [
+   "works with the marked / selected files in the active pane",
+   "arbeitet mit den markierten / ausgewählten Dateien im aktiven Panel",
+   "pracuje z zaznaczonymi / wybranymi plikami w aktywnym panelu"
+  ],
+  "pracuje se souborem pod kurzorem v aktivním panelu": [
+   "works with the file under the cursor in the active pane",
+   "arbeitet mit der Datei unter dem Cursor im aktiven Panel",
+   "pracuje z plikiem pod kursorem w aktywnym panelu"
+  ],
+  "a se souborem pod kurzorem ve druhém panelu": [
+   "and with the file under the cursor in the other pane",
+   "und mit der Datei unter dem Cursor im anderen Panel",
+   "oraz z plikiem pod kursorem w drugim panelu"
+  ],
+  "dostane složku aktivního panelu": [
+   "gets the folder of the active pane",
+   "erhält den Ordner des aktiven Panels",
+   "dostaje folder aktywnego panelu"
+  ],
+  "dostane složku druhého panelu (např. pro výsledky)": [
+   "gets the folder of the other pane (e.g. for results)",
+   "erhält den Ordner des anderen Panels (z. B. für Ergebnisse)",
+   "dostaje folder drugiego panelu (np. na wyniki)"
+  ],
+  "• jen soubory: {0}": [
+   "• files only: {0}",
+   "• nur Dateien: {0}",
+   "• tylko pliki: {0}"
+  ],
+  "• spustí se bez parametrů; když se skript na něco zeptá (např. PN nebo CR), objeví se okno pro zadání": [
+   "• runs without parameters; when the script asks for something (e.g. PN or CR), an input window appears",
+   "• startet ohne Parameter; wenn das Skript etwas fragt (z. B. PN oder CR), erscheint ein Eingabefenster",
+   "• uruchamia się bez parametrów; gdy skrypt o coś zapyta (np. PN lub CR), pojawi się okno wprowadzania"
+  ],
+  "• nejdřív náhled bez zápisu, naostro až po potvrzení": [
+   "• first a preview without writing, the real run only after confirmation",
+   "• zuerst eine Vorschau ohne Schreiben, der echte Lauf erst nach Bestätigung",
+   "• najpierw podgląd bez zapisu, właściwe uruchomienie dopiero po potwierdzeniu"
+  ],
+  "• po doběhnutí otevře ve druhém panelu: {0}": [
+   "• when finished, opens in the other pane: {0}",
+   "• öffnet nach dem Ende im anderen Panel: {0}",
+   "• po zakończeniu otwiera w drugim panelu: {0}"
+  ],
+  "Spouští: `{0}`": [
+   "Runs: `{0}`",
+   "Startet: `{0}`",
+   "Uruchamia: `{0}`"
+  ],
+  "## ⚠ Problém s nástroji\n": [
+   "## ⚠ Problem with the tools\n",
+   "## ⚠ Problem mit den Tools\n",
+   "## ⚠ Problem z narzędziami\n"
+  ],
+  "Žádné nástroje nejsou načtené. Viz téma Nástroje – nastavení.": [
+   "No tools are loaded. See the topic Tools – setup.",
+   "Es sind keine Tools geladen. Siehe Thema Tools – Einrichtung.",
+   "Nie wczytano żadnych narzędzi. Zobacz temat Narzędzia – ustawienia."
+  ],
+  "Všechny nástroje z menu Nástroje (F9). Popis vzniká z jejich nastavení; vlastní text doplní klíč `popis` v souboru nástrojů.": [
+   "All tools from the Tools menu (F9). The description comes from their settings; the key `popis` in the tool file adds your own text.",
+   "Alle Tools aus dem Menü Tools (F9). Die Beschreibung entsteht aus ihren Einstellungen; eigenen Text ergänzt der Schlüssel `popis` in der Tool-Datei.",
+   "Wszystkie narzędzia z menu Narzędzia (F9). Opis powstaje z ich ustawień; własny tekst dodaje klucz `popis` w pliku narzędzi."
+  ],
+  "Nápověda – Dvojpanel {0}": [
+   "Help – Dvojpanel {0}",
+   "Hilfe – Dvojpanel {0}",
+   "Pomoc – Dvojpanel {0}"
+  ],
+  "+ Přidat": [
+   "+ Add",
+   "+ Hinzufügen",
+   "+ Dodaj"
+  ],
+  "Připraveno": [
+   "Ready",
+   "Bereit",
+   "Gotowe"
+  ],
+  "Nápověda": [
+   "Help",
+   "Hilfe",
+   "Pomoc"
+  ],
+  "Přejmenovat": [
+   "Rename",
+   "Umbenennen",
+   "Zmień nazwę"
+  ],
+  "Otevřít": [
+   "Open",
+   "Öffnen",
+   "Otwórz"
+  ],
+  "Upravit": [
+   "Edit",
+   "Bearbeiten",
+   "Edytuj"
+  ],
+  "Kopírovat": [
+   "Copy",
+   "Kopieren",
+   "Kopiuj"
+  ],
+  "Nová složka": [
+   "New folder",
+   "Neuer Ordner",
+   "Nowy folder"
+  ],
+  "Přesunout": [
+   "Move",
+   "Verschieben",
+   "Przenieś"
+  ],
+  "Nástroje": [
+   "Tools",
+   "Tools",
+   "Narzędzia"
+  ],
+  "Smazat": [
+   "Delete",
+   "Löschen",
+   "Usuń"
+  ],
+  "Jazyk": [
+   "Language",
+   "Sprache",
+   "Język"
+  ],
+  "Nastavení": [
+   "Settings",
+   "Einstellungen",
+   "Ustawienia"
+  ],
+  "Nelze uložit dvojpanel.json:\n{0}": [
+   "Cannot save dvojpanel.json:\n{0}",
+   "dvojpanel.json kann nicht gespeichert werden:\n{0}",
+   "Nie można zapisać dvojpanel.json:\n{0}"
+  ],
+  "Jazyk: {0}": [
+   "Language: {0}",
+   "Sprache: {0}",
+   "Język: {0}"
+  ],
+  "Výchozí složka ({0}) není dostupná": [
+   "The start folder ({0}) is not available",
+   "Der Startordner ({0}) ist nicht verfügbar",
+   "Folder startowy ({0}) jest niedostępny"
+  ],
+  "Nelze vytvořit dvojpanel.json:\n{0}": [
+   "Cannot create dvojpanel.json:\n{0}",
+   "dvojpanel.json kann nicht erstellt werden:\n{0}",
+   "Nie można utworzyć dvojpanel.json:\n{0}"
+  ],
+  "Při spuštění otevírat tyto složky?\n\nLevý panel: {0}\nPravý panel: {1}": [
+   "Open these folders at startup?\n\nLeft pane: {0}\nRight pane: {1}",
+   "Diese Ordner beim Start öffnen?\n\nLinkes Panel: {0}\nRechtes Panel: {1}",
+   "Otwierać te foldery przy uruchomieniu?\n\nLewy panel: {0}\nPrawy panel: {1}"
+  ],
+  "Výchozí složky": [
+   "Start folders",
+   "Startordner",
+   "Foldery startowe"
+  ],
+  "Výchozí složky uloženy do dvojpanel.json": [
+   "Start folders saved to dvojpanel.json",
+   "Startordner in dvojpanel.json gespeichert",
+   "Foldery startowe zapisane w dvojpanel.json"
+  ],
+  " (výchozí)": [
+   " (default)",
+   " (Standard)",
+   " (domyślny)"
+  ],
+  "Velikost písma: {0}": [
+   "Font size: {0}",
+   "Schriftgröße: {0}",
+   "Rozmiar czcionki: {0}"
+  ],
+  "Nastavení načteno": [
+   "Settings loaded",
+   "Einstellungen geladen",
+   "Ustawienia wczytane"
+  ],
+  "Počkej, až doběhne předchozí operace.": [
+   "Wait until the previous operation finishes.",
+   "Warte, bis der vorherige Vorgang beendet ist.",
+   "Poczekaj, aż zakończy się poprzednia operacja."
+  ],
+  "Probíhá operace": [
+   "Operation in progress",
+   "Vorgang läuft",
+   "Trwa operacja"
+  ],
+  "Název složky:": [
+   "Folder name:",
+   "Ordnername:",
+   "Nazwa folderu:"
+  ],
+  "Stejná složka": [
+   "Same folder",
+   "Gleicher Ordner",
+   "Ten sam folder"
+  ],
+  "Zdroj a cíl jsou stejná složka.": [
+   "The source and the target are the same folder.",
+   "Quelle und Ziel sind derselbe Ordner.",
+   "Źródło i cel to ten sam folder."
+  ],
+  "Nelze": [
+   "Not possible",
+   "Nicht möglich",
+   "Nie można"
+  ],
+  "Složku nelze kopírovat do sebe sama:\n{0}": [
+   "A folder cannot be copied into itself:\n{0}",
+   "Ein Ordner kann nicht in sich selbst kopiert werden:\n{0}",
+   "Folderu nie można skopiować do niego samego:\n{0}"
+  ],
+  "{0} {1} položek do:\n{2}": [
+   "{0} {1} items to:\n{2}",
+   "{0}: {1} Elemente nach:\n{2}",
+   "{0} – elementów: {1} – do:\n{2}"
+  ],
+  "{0} {1} položek do: {2}   (Shift = přesunout, Esc = zrušit)": [
+   "{0} {1} items to: {2}   (Shift = move, Esc = cancel)",
+   "{0}: {1} Elemente nach: {2}   (Shift = verschieben, Esc = abbrechen)",
+   "{0} – elementów: {1} – do: {2}   (Shift = przenieś, Esc = anuluj)"
+  ],
+  "Přetažení {0} položek: pusť nad druhým panelem nebo nad složkou": [
+   "Dragging {0} items: drop them over the other pane or over a folder",
+   "{0} Elemente werden gezogen: über dem anderen Panel oder einem Ordner loslassen",
+   "Przeciąganie {0} elementów: upuść nad drugim panelem albo nad folderem"
+  ],
+  "Přesunout {0} položek do koše?": [
+   "Move {0} items to the Recycle Bin?",
+   "{0} Elemente in den Papierkorb verschieben?",
+   "Przenieść {0} elementów do Kosza?"
+  ],
+  "POZOR: síťový disk nemá koš, {0} položek se smaže TRVALE.\n\nPokračovat?": [
+   "WARNING: a network drive has no Recycle Bin, {0} items will be deleted PERMANENTLY.\n\nContinue?",
+   "ACHTUNG: ein Netzlaufwerk hat keinen Papierkorb, {0} Elemente werden ENDGÜLTIG gelöscht.\n\nFortfahren?",
+   "UWAGA: dysk sieciowy nie ma Kosza, {0} elementów zostanie usuniętych TRWALE.\n\nKontynuować?"
+  ],
+  "   (Esc = přerušit)": [
+   "   (Esc = stop)",
+   "   (Esc = abbrechen)",
+   "   (Esc = przerwij)"
+  ],
+  "Přerušuji…": [
+   "Stopping…",
+   "Breche ab…",
+   "Przerywam…"
+  ],
+  "Hotovo": [
+   "Done",
+   "Fertig",
+   "Gotowe"
+  ],
+  "Hotovo, chyb: {0}": [
+   "Done, errors: {0}",
+   "Fertig, Fehler: {0}",
+   "Gotowe, błędów: {0}"
+  ],
+  "Obnovit": [
+   "Refresh",
+   "Aktualisieren",
+   "Odśwież"
+  ],
+  "Uložit aktuální složky jako výchozí…": [
+   "Save the current folders as start folders…",
+   "Aktuelle Ordner als Startordner speichern…",
+   "Zapisz bieżące foldery jako startowe…"
+  ],
+  "Upravit dvojpanel.json": [
+   "Edit dvojpanel.json",
+   "dvojpanel.json bearbeiten",
+   "Edytuj dvojpanel.json"
+  ],
+  "Načíst nastavení znovu": [
+   "Reload settings",
+   "Einstellungen neu laden",
+   "Wczytaj ustawienia ponownie"
+  ],
+  "Větší písmo": [
+   "Larger font",
+   "Größere Schrift",
+   "Większa czcionka"
+  ],
+  "Menší písmo": [
+   "Smaller font",
+   "Kleinere Schrift",
+   "Mniejsza czcionka"
+  ],
+  "Výchozí velikost písma": [
+   "Default font size",
+   "Standard-Schriftgröße",
+   "Domyślny rozmiar czcionki"
+  ],
+  "Vytvořit zástupce v nabídce Start…": [
+   "Create a shortcut in the Start menu…",
+   "Verknüpfung im Startmenü erstellen…",
+   "Utwórz skrót w menu Start…"
+  ],
+  "Konec": [
+   "Exit",
+   "Beenden",
+   "Zakończ"
+  ],
+  "Porovnat a synchronizovat složky…": [
+   "Compare and synchronize folders…",
+   "Ordner vergleichen und synchronisieren…",
+   "Porównaj i synchronizuj foldery…"
+  ],
+  "Prohodit panely": [
+   "Swap panes",
+   "Panels tauschen",
+   "Zamień panele"
+  ],
+  "Git pull v aktuální složce": [
+   "Git pull in the current folder",
+   "Git pull im aktuellen Ordner",
+   "Git pull w bieżącym folderze"
+  ],
+  "Příkazy": [
+   "Commands",
+   "Befehle",
+   "Polecenia"
+  ],
+  "Oblíbené": [
+   "Favorites",
+   "Favoriten",
+   "Ulubione"
+  ],
+  "Moje nástroje": [
+   "My tools",
+   "Meine Tools",
+   "Moje narzędzia"
+  ],
+  "O programu": [
+   "About",
+   "Über das Programm",
+   "O programie"
+  ],
+  "Zástupce": [
+   "Shortcut",
+   "Verknüpfung",
+   "Skrót"
+  ],
+  "Zástupce lze vytvořit jen ve Windows.": [
+   "A shortcut can be created on Windows only.",
+   "Eine Verknüpfung kann nur unter Windows erstellt werden.",
+   "Skrót można utworzyć tylko w systemie Windows."
+  ],
+  "Zástupce se nepodařilo vytvořit:\n{0}\n\nRučně: pravým tlačítkem na plochu → Nový → Zástupce, umístění:\n\"{1}\" \"{2}\"": [
+   "The shortcut could not be created:\n{0}\n\nBy hand: right-click the desktop → New → Shortcut, location:\n\"{1}\" \"{2}\"",
+   "Die Verknüpfung konnte nicht erstellt werden:\n{0}\n\nVon Hand: Rechtsklick auf den Desktop → Neu → Verknüpfung, Speicherort:\n\"{1}\" \"{2}\"",
+   "Nie udało się utworzyć skrótu:\n{0}\n\nRęcznie: prawym przyciskiem na pulpicie → Nowy → Skrót, lokalizacja:\n\"{1}\" \"{2}\""
+  ],
+  "Zástupce vytvořen:\n{0}\n\nPřipnutí na hlavní panel: Start → napiš „Dvojpanel“ → pravým tlačítkem → Připnout na hlavní panel.\n\nPo aktualizaci Pythonu nebo přesunu složky programu zástupce vytvoř znovu.": [
+   "Shortcut created:\n{0}\n\nPinning to the taskbar: Start → type “Dvojpanel” → right-click → Pin to taskbar.\n\nAfter updating Python or moving the program folder, create the shortcut again.",
+   "Verknüpfung erstellt:\n{0}\n\nAn die Taskleiste anheften: Start → „Dvojpanel“ eingeben → Rechtsklick → An Taskleiste anheften.\n\nNach einem Python-Update oder dem Verschieben des Programmordners die Verknüpfung neu erstellen.",
+   "Skrót utworzony:\n{0}\n\nPrzypięcie do paska zadań: Start → wpisz „Dvojpanel” → prawym przyciskiem → Przypnij do paska zadań.\n\nPo aktualizacji Pythona lub przeniesieniu folderu programu utwórz skrót ponownie."
+  ],
+  "Žádné oblíbené složky": [
+   "No favorite folders",
+   "Keine Favoritenordner",
+   "Brak ulubionych folderów"
+  ],
+  "Přidat aktuální složku…": [
+   "Add the current folder…",
+   "Aktuellen Ordner hinzufügen…",
+   "Dodaj bieżący folder…"
+  ],
+  "Odebrat": [
+   "Remove",
+   "Entfernen",
+   "Usuń z listy"
+  ],
+  "Upravit oblibene.json": [
+   "Edit oblibene.json",
+   "oblibene.json bearbeiten",
+   "Edytuj oblibene.json"
+  ],
+  "Načíst oblíbené znovu": [
+   "Reload favorites",
+   "Favoriten neu laden",
+   "Wczytaj ulubione ponownie"
+  ],
+  "Zobrazit lištu oblíbených": [
+   "Show the favorites bar",
+   "Favoritenleiste anzeigen",
+   "Pokaż pasek ulubionych"
+  ],
+  "Otevřít v aktivním panelu": [
+   "Open in the active pane",
+   "Im aktiven Panel öffnen",
+   "Otwórz w aktywnym panelu"
+  ],
+  "Otevřít ve druhém panelu": [
+   "Open in the other pane",
+   "Im anderen Panel öffnen",
+   "Otwórz w drugim panelu"
+  ],
+  "Odebrat z oblíbených…": [
+   "Remove from favorites…",
+   "Aus Favoriten entfernen…",
+   "Usuń z ulubionych…"
+  ],
+  "Načteno oblíbených: {0}": [
+   "Favorites loaded: {0}",
+   "Favoriten geladen: {0}",
+   "Wczytano ulubionych: {0}"
+  ],
+  "Složka není dostupná": [
+   "The folder is not available",
+   "Der Ordner ist nicht verfügbar",
+   "Folder jest niedostępny"
+  ],
+  "Otevírám {0}…": [
+   "Opening {0}…",
+   "Öffne {0}…",
+   "Otwieram {0}…"
+  ],
+  "Složka už v oblíbených je:\n{0}": [
+   "The folder is already in the favorites:\n{0}",
+   "Der Ordner ist bereits in den Favoriten:\n{0}",
+   "Folder jest już w ulubionych:\n{0}"
+  ],
+  "Název:": [
+   "Name:",
+   "Name:",
+   "Nazwa:"
+  ],
+  "Přidat do oblíbených": [
+   "Add to favorites",
+   "Zu Favoriten hinzufügen",
+   "Dodaj do ulubionych"
+  ],
+  "Odebrat z oblíbených?\n{0}": [
+   "Remove from favorites?\n{0}",
+   "Aus Favoriten entfernen?\n{0}",
+   "Usunąć z ulubionych?\n{0}"
+  ],
+  "Nelze uložit oblibene.json:\n{0}": [
+   "Cannot save oblibene.json:\n{0}",
+   "oblibene.json kann nicht gespeichert werden:\n{0}",
+   "Nie można zapisać oblibene.json:\n{0}"
+  ],
+  "Nelze vytvořit oblibene.json:\n{0}": [
+   "Cannot create oblibene.json:\n{0}",
+   "oblibene.json kann nicht erstellt werden:\n{0}",
+   "Nie można utworzyć oblibene.json:\n{0}"
+  ],
+  "Žádné nástroje": [
+   "No tools",
+   "Keine Tools",
+   "Brak narzędzi"
+  ],
+  "Upravit nastroje.json": [
+   "Edit nastroje.json",
+   "nastroje.json bearbeiten",
+   "Edytuj nastroje.json"
+  ],
+  "Načíst nástroje znovu": [
+   "Reload tools",
+   "Tools neu laden",
+   "Wczytaj narzędzia ponownie"
+  ],
+  "Přidat nástroje projektu…": [
+   "Add project tools…",
+   "Projekt-Tools hinzufügen…",
+   "Dodaj narzędzia projektu…"
+  ],
+  "Zastavit běžící nástroj": [
+   "Stop the running tool",
+   "Laufendes Tool stoppen",
+   "Zatrzymaj działające narzędzie"
+  ],
+  "Vymazat výstup": [
+   "Clear the output",
+   "Ausgabe löschen",
+   "Wyczyść wyjście"
+  ],
+  "Nápověda k nástrojům": [
+   "Help on tools",
+   "Hilfe zu den Tools",
+   "Pomoc do narzędzi"
+  ],
+  "Načteno nástrojů: {0}": [
+   "Tools loaded: {0}",
+   "Tools geladen: {0}",
+   "Wczytano narzędzi: {0}"
+  ],
+  "soubor musí obsahovat objekt { … }": [
+   "the file must contain an object { … }",
+   "die Datei muss ein Objekt { … } enthalten",
+   "plik musi zawierać obiekt { … }"
+  ],
+  "nastroje.json nelze upravit, oprav ho nejdřív ručně:\n{0}": [
+   "nastroje.json cannot be changed, fix it by hand first:\n{0}",
+   "nastroje.json kann nicht geändert werden, bitte zuerst von Hand korrigieren:\n{0}",
+   "Nie można zmienić nastroje.json, najpierw popraw go ręcznie:\n{0}"
+  ],
+  "Vyber soubor nástrojů projektu (dvojpanel_nastroje.json)": [
+   "Choose the project's tool file (dvojpanel_nastroje.json)",
+   "Tool-Datei des Projekts wählen (dvojpanel_nastroje.json)",
+   "Wybierz plik narzędzi projektu (dvojpanel_nastroje.json)"
+  ],
+  "Soubor nástrojů (*.json)": [
+   "Tool file (*.json)",
+   "Tool-Datei (*.json)",
+   "Plik narzędzi (*.json)"
+  ],
+  "Všechny soubory": [
+   "All files",
+   "Alle Dateien",
+   "Wszystkie pliki"
+  ],
+  "neobsahuje žádné nástroje ('nastroje': [...])": [
+   "contains no tools ('nastroje': [...])",
+   "enthält keine Tools ('nastroje': [...])",
+   "nie zawiera żadnych narzędzi ('nastroje': [...])"
+  ],
+  "Tohle není soubor nástrojů:\n{0}\n\n{1}": [
+   "This is not a tool file:\n{0}\n\n{1}",
+   "Das ist keine Tool-Datei:\n{0}\n\n{1}",
+   "To nie jest plik narzędzi:\n{0}\n\n{1}"
+  ],
+  "Tento soubor už je vložený:\n{0}": [
+   "This file is already included:\n{0}",
+   "Diese Datei ist bereits eingebunden:\n{0}",
+   "Ten plik jest już dołączony:\n{0}"
+  ],
+  "Nelze uložit nastroje.json:\n{0}": [
+   "Cannot save nastroje.json:\n{0}",
+   "nastroje.json kann nicht gespeichert werden:\n{0}",
+   "Nie można zapisać nastroje.json:\n{0}"
+  ],
+  "Přidáno {0} nástrojů z:\n{1}": [
+   "Added {0} tools from:\n{1}",
+   "{0} Tools hinzugefügt aus:\n{1}",
+   "Dodano narzędzi: {0}, z pliku:\n{1}"
+  ],
+  "Nástroj běží": [
+   "A tool is running",
+   "Ein Tool läuft",
+   "Narzędzie działa"
+  ],
+  "Počkej, až doběhne předchozí nástroj, nebo ho zastav v menu Nástroje.": [
+   "Wait until the previous tool finishes, or stop it in the Tools menu.",
+   "Warte, bis das vorherige Tool fertig ist, oder stoppe es im Menü Tools.",
+   "Poczekaj, aż zakończy się poprzednie narzędzie, albo zatrzymaj je w menu Narzędzia."
+  ],
+  "Nástroj přijímá jen: {0}\n\nNevyhovuje: {1}": [
+   "The tool accepts only: {0}\n\nNot accepted: {1}",
+   "Das Tool akzeptiert nur: {0}\n\nNicht passend: {1}",
+   "Narzędzie przyjmuje tylko: {0}\n\nNie pasuje: {1}"
+  ],
+  "Tato složka není v repozitáři gitu:\n{0}": [
+   "This folder is not in a git repository:\n{0}",
+   "Dieser Ordner liegt in keinem Git-Repository:\n{0}",
+   "Ten folder nie należy do repozytorium gita:\n{0}"
+  ],
+  "Program git nebyl nalezen (není nainstalovaný nebo není v PATH).": [
+   "The git program was not found (it is not installed or not in PATH).",
+   "Das Programm git wurde nicht gefunden (nicht installiert oder nicht im PATH).",
+   "Nie znaleziono programu git (nie jest zainstalowany albo nie ma go w PATH)."
+  ],
+  "{0} – náhled": [
+   "{0} – preview",
+   "{0} – Vorschau",
+   "{0} – podgląd"
+  ],
+  "\n▶ {0}\n  {1}\n  (složka: {2})\n": [
+   "\n▶ {0}\n  {1}\n  (folder: {2})\n",
+   "\n▶ {0}\n  {1}\n  (Ordner: {2})\n",
+   "\n▶ {0}\n  {1}\n  (folder: {2})\n"
+  ],
+  "  Nelze spustit: {0}\n": [
+   "  Cannot start: {0}\n",
+   "  Start nicht möglich: {0}\n",
+   "  Nie można uruchomić: {0}\n"
+  ],
+  "Běží: {0}": [
+   "Running: {0}",
+   "Läuft: {0}",
+   "Działa: {0}"
+  ],
+  "Nástroj čeká na zadání": [
+   "The tool is waiting for input",
+   "Das Tool wartet auf eine Eingabe",
+   "Narzędzie czeka na dane"
+  ],
+  "  (vstup ukončen)\n": [
+   "  (input ended)\n",
+   "  (Eingabe beendet)\n",
+   "  (wprowadzanie zakończone)\n"
+  ],
+  "{0}: nástroj přijímá jen {1}\n\nNevyhovuje: {2}": [
+   "{0}: the tool accepts only {1}\n\nNot accepted: {2}",
+   "{0}: das Tool akzeptiert nur {1}\n\nNicht passend: {2}",
+   "{0}: narzędzie przyjmuje tylko {1}\n\nNie pasuje: {2}"
+  ],
+  "■ Hotovo\n": [
+   "■ Done\n",
+   "■ Fertig\n",
+   "■ Gotowe\n"
+  ],
+  "{0}: hotovo": [
+   "{0}: done",
+   "{0}: fertig",
+   "{0}: gotowe"
+  ],
+  "■ Skončilo s chybou (návratový kód {0})\n": [
+   "■ Ended with an error (exit code {0})\n",
+   "■ Mit Fehler beendet (Rückgabecode {0})\n",
+   "■ Zakończono z błędem (kod wyjścia {0})\n"
+  ],
+  "{0}: chyba {1}": [
+   "{0}: error {1}",
+   "{0}: Fehler {1}",
+   "{0}: błąd {1}"
+  ],
+  "  Dvojpanel je aktualizován na verzi {0}, běží ještě {1}. Nová verze platí po novém spuštění programu.\n": [
+   "  Dvojpanel has been updated to version {0}, version {1} is still running. The new version applies after the program is started again.\n",
+   "  Dvojpanel wurde auf Version {0} aktualisiert, es läuft noch {1}. Die neue Version gilt nach einem Neustart des Programms.\n",
+   "  Dvojpanel został zaktualizowany do wersji {0}, nadal działa {1}. Nowa wersja obowiązuje po ponownym uruchomieniu programu.\n"
+  ],
+  "■ Náhled skončil s chybou (návratový kód {0}), nic se nezapisuje.\n": [
+   "■ The preview ended with an error (exit code {0}), nothing is written.\n",
+   "■ Die Vorschau endete mit einem Fehler (Rückgabecode {0}), es wird nichts geschrieben.\n",
+   "■ Podgląd zakończył się błędem (kod wyjścia {0}), nic nie zostanie zapisane.\n"
+  ],
+  "■ Náhled: beze změn, není co zapsat.\n": [
+   "■ Preview: no changes, nothing to write.\n",
+   "■ Vorschau: keine Änderungen, nichts zu schreiben.\n",
+   "■ Podgląd: bez zmian, nie ma czego zapisywać.\n"
+  ],
+  "{0}: beze změn": [
+   "{0}: no changes",
+   "{0}: keine Änderungen",
+   "{0}: bez zmian"
+  ],
+  "■ Náhled hotov (návratový kód {0})\n": [
+   "■ Preview finished (exit code {0})\n",
+   "■ Vorschau fertig (Rückgabecode {0})\n",
+   "■ Podgląd gotowy (kod wyjścia {0})\n"
+  ],
+  "{0}: čeká na potvrzení": [
+   "{0}: waiting for confirmation",
+   "{0}: wartet auf Bestätigung",
+   "{0}: czeka na potwierdzenie"
+  ],
+  "Náhled změn je v dolním panelu.\n\nProvést změny naostro?": [
+   "The preview of the changes is in the bottom panel.\n\nMake the changes for real?",
+   "Die Vorschau der Änderungen steht im unteren Bereich.\n\nÄnderungen wirklich durchführen?",
+   "Podgląd zmian jest w dolnym panelu.\n\nWprowadzić zmiany naprawdę?"
+  ],
+  "  Zrušeno, nic se nezapsalo.\n": [
+   "  Cancelled, nothing was written.\n",
+   "  Abgebrochen, es wurde nichts geschrieben.\n",
+   "  Anulowano, nic nie zapisano.\n"
+  ],
+  "{0}: zrušeno": [
+   "{0}: cancelled",
+   "{0}: abgebrochen",
+   "{0}: anulowano"
+  ],
+  "  Zastavuji nástroj…\n": [
+   "  Stopping the tool…\n",
+   "  Stoppe das Tool…\n",
+   "  Zatrzymuję narzędzie…\n"
+  ],
+  "Nástroj stále běží. Ukončit ho a zavřít?": [
+   "The tool is still running. End it and close?",
+   "Das Tool läuft noch. Beenden und schließen?",
+   "Narzędzie nadal działa. Zakończyć je i zamknąć?"
+  ],
+  "Bez skupiny": [
+   "No group",
+   "Ohne Gruppe",
+   "Bez grupy"
+  ]
+ },
+ "napoveda": {
+  "Začínáme": {
+   "en": [
+    "Getting started",
+    "Dvojpanel is a file manager with two panes (like Norton or Total Commander) that can also run your own scripts – in the Tools menu.",
+    "",
+    "## The window",
+    "• At the top the bar of favorite folders, below it two panes with files, at the bottom the output of tools and the status line.",
+    "• The active pane has a green dot at its top left. `Tab` switches between the panes.",
+    "• Copying and moving always go from the active pane to the other one.",
+    "• You can type a path into the address line above a pane and press `Enter`.",
+    "",
+    "## The most common keys",
+    "F1\thelp (this window)",
+    "F2\trename",
+    "F3 / F4\topen / edit in Notepad",
+    "F5 / F6\tcopy / move to the other pane",
+    "F7\tnew folder",
+    "F8\tdelete to the Recycle Bin",
+    "F9\tthe tools menu",
+    "Tab\tswitch the pane",
+    "Enter\topen a folder or a file",
+    "Backspace\tone level up",
+    "",
+    "The full list is in the topic Keys and mouse."
+   ],
+   "de": [
+    "Erste Schritte",
+    "Dvojpanel ist ein Dateimanager mit zwei Panels (wie Norton oder Total Commander), der außerdem eigene Skripte starten kann – im Menü Tools.",
+    "",
+    "## Das Fenster",
+    "• Oben die Leiste der Favoritenordner, darunter zwei Panels mit Dateien, unten die Ausgabe der Tools und die Statuszeile.",
+    "• Das aktive Panel hat links oben einen grünen Punkt. `Tab` wechselt zwischen den Panels.",
+    "• Kopieren und Verschieben gehen immer vom aktiven Panel in das andere.",
+    "• In die Adresszeile über einem Panel kann man einen Pfad schreiben und `Enter` drücken.",
+    "",
+    "## Die häufigsten Tasten",
+    "F1\tHilfe (dieses Fenster)",
+    "F2\tumbenennen",
+    "F3 / F4\töffnen / im Editor (Notepad) bearbeiten",
+    "F5 / F6\tin das andere Panel kopieren / verschieben",
+    "F7\tneuer Ordner",
+    "F8\tin den Papierkorb löschen",
+    "F9\tMenü der Tools",
+    "Tab\tPanel wechseln",
+    "Enter\tOrdner oder Datei öffnen",
+    "Backspace\teine Ebene höher",
+    "",
+    "Die vollständige Liste steht im Thema Tasten und Maus."
+   ],
+   "pl": [
+    "Pierwsze kroki",
+    "Dvojpanel to menedżer plików z dwoma panelami (jak Norton albo Total Commander), który dodatkowo potrafi uruchamiać własne skrypty – w menu Narzędzia.",
+    "",
+    "## Okno",
+    "• U góry pasek ulubionych folderów, pod nim dwa panele z plikami, na dole wyjście narzędzi i wiersz stanu.",
+    "• Aktywny panel ma zieloną kropkę w lewym górnym rogu. `Tab` przełącza między panelami.",
+    "• Kopiowanie i przenoszenie odbywa się zawsze z aktywnego panelu do drugiego.",
+    "• W wierszu adresu nad panelem można wpisać ścieżkę i nacisnąć `Enter`.",
+    "",
+    "## Najczęstsze klawisze",
+    "F1\tpomoc (to okno)",
+    "F2\tzmiana nazwy",
+    "F3 / F4\totwórz / edytuj w Notatniku",
+    "F5 / F6\tkopiuj / przenieś do drugiego panelu",
+    "F7\tnowy folder",
+    "F8\tusuń do Kosza",
+    "F9\tmenu narzędzi",
+    "Tab\tprzełącz panel",
+    "Enter\totwórz folder lub plik",
+    "Backspace\tpoziom wyżej",
+    "",
+    "Pełna lista jest w temacie Klawisze i mysz."
+   ]
+  },
+  "Klávesy a myš": {
+   "en": [
+    "Keys and mouse",
+    "## Moving around",
+    "Tab\tswitch the pane",
+    "Enter / double-click\topen a folder or a file (a file in its default program)",
+    "Backspace\tone level up (also the row [..])",
+    "Ctrl+R\trefresh both panes",
+    "Ctrl+U\tswap the folders of the left and the right pane",
+    "Ctrl+D\tfavorite folders",
+    "Ctrl++ / Ctrl+-\tlarger / smaller font",
+    "Ctrl+0\tdefault font size",
+    "Ctrl+Q\texit",
+    "",
+    "## Selecting",
+    "Space / Insert\tmark / unmark the item and move down",
+    "Ctrl+A\tmark everything, a second time clears the marks",
+    "Ctrl+click\tadd an item to the selection",
+    "Shift+arrows\tselect a range",
+    "",
+    "## Files",
+    "F2\trename directly in the row (also a slow second click on the name)",
+    "F3\topen the file",
+    "F4\tedit in Notepad",
+    "F5\tcopy to the other pane",
+    "F6\tmove to the other pane",
+    "F7\tnew folder",
+    "F8\tdelete to the Recycle Bin",
+    "Esc\tstop a running copy / move",
+    "",
+    "## Commands",
+    "F9\tthe tools menu (your own scripts)",
+    "Ctrl+S\tcompare and synchronize folders",
+    "Ctrl+G\tgit pull in the folder of the active pane",
+    "F1\thelp",
+    "",
+    "## Mouse",
+    "• A click on a column heading sorts by that column, a second click reverses the order.",
+    "• Dragging items to the other pane or onto a folder copies them, with `Shift` it moves them.",
+    "• A slow second click on the name of the selected item renames it."
+   ],
+   "de": [
+    "Tasten und Maus",
+    "## Bewegen",
+    "Tab\tPanel wechseln",
+    "Enter / Doppelklick\tOrdner oder Datei öffnen (Datei im Standardprogramm)",
+    "Backspace\teine Ebene höher (auch die Zeile [..])",
+    "Ctrl+R\tbeide Panels aktualisieren",
+    "Ctrl+U\tOrdner des linken und rechten Panels tauschen",
+    "Ctrl+D\tFavoritenordner",
+    "Ctrl++ / Ctrl+-\tgrößere / kleinere Schrift",
+    "Ctrl+0\tStandard-Schriftgröße",
+    "Ctrl+Q\tbeenden",
+    "",
+    "## Auswahl",
+    "Leertaste / Einfg\tElement markieren / Markierung aufheben und nach unten gehen",
+    "Ctrl+A\talles markieren, beim zweiten Mal Markierung aufheben",
+    "Ctrl+Klick\tElement zur Auswahl hinzufügen",
+    "Shift+Pfeile\tBereich auswählen",
+    "",
+    "## Dateien",
+    "F2\tdirekt in der Zeile umbenennen (auch langsamer zweiter Klick auf den Namen)",
+    "F3\tDatei öffnen",
+    "F4\tim Editor (Notepad) bearbeiten",
+    "F5\tin das andere Panel kopieren",
+    "F6\tin das andere Panel verschieben",
+    "F7\tneuer Ordner",
+    "F8\tin den Papierkorb löschen",
+    "Esc\tlaufendes Kopieren / Verschieben abbrechen",
+    "",
+    "## Befehle",
+    "F9\tMenü der Tools (eigene Skripte)",
+    "Ctrl+S\tOrdner vergleichen und synchronisieren",
+    "Ctrl+G\tgit pull im Ordner des aktiven Panels",
+    "F1\tHilfe",
+    "",
+    "## Maus",
+    "• Ein Klick auf eine Spaltenüberschrift sortiert nach dieser Spalte, ein zweiter Klick kehrt die Reihenfolge um.",
+    "• Ziehen von Elementen in das andere Panel oder auf einen Ordner kopiert sie, mit `Shift` werden sie verschoben.",
+    "• Ein langsamer zweiter Klick auf den Namen des ausgewählten Elements benennt es um."
+   ],
+   "pl": [
+    "Klawisze i mysz",
+    "## Poruszanie się",
+    "Tab\tprzełączenie panelu",
+    "Enter / dwuklik\totwórz folder lub plik (plik w domyślnym programie)",
+    "Backspace\tpoziom wyżej (także wiersz [..])",
+    "Ctrl+R\todśwież oba panele",
+    "Ctrl+U\tzamień foldery lewego i prawego panelu",
+    "Ctrl+D\tulubione foldery",
+    "Ctrl++ / Ctrl+-\twiększa / mniejsza czcionka",
+    "Ctrl+0\tdomyślny rozmiar czcionki",
+    "Ctrl+Q\tzakończ",
+    "",
+    "## Zaznaczanie",
+    "Spacja / Insert\tzaznacz / odznacz element i przejdź w dół",
+    "Ctrl+A\tzaznacz wszystko, za drugim razem usuń zaznaczenie",
+    "Ctrl+klik\tdodaj element do wyboru",
+    "Shift+strzałki\twybierz zakres",
+    "",
+    "## Pliki",
+    "F2\tzmień nazwę bezpośrednio w wierszu (także powolne drugie kliknięcie nazwy)",
+    "F3\totwórz plik",
+    "F4\tedytuj w Notatniku",
+    "F5\tkopiuj do drugiego panelu",
+    "F6\tprzenieś do drugiego panelu",
+    "F7\tnowy folder",
+    "F8\tusuń do Kosza",
+    "Esc\tprzerwij trwające kopiowanie / przenoszenie",
+    "",
+    "## Polecenia",
+    "F9\tmenu narzędzi (własne skrypty)",
+    "Ctrl+S\tporównaj i synchronizuj foldery",
+    "Ctrl+G\tgit pull w folderze aktywnego panelu",
+    "F1\tpomoc",
+    "",
+    "## Mysz",
+    "• Kliknięcie nagłówka kolumny sortuje według tej kolumny, drugie kliknięcie odwraca kolejność.",
+    "• Przeciągnięcie elementów do drugiego panelu albo na folder kopiuje je, z klawiszem `Shift` przenosi.",
+    "• Powolne drugie kliknięcie nazwy wybranego elementu pozwala zmienić jego nazwę."
+   ]
+  },
+  "Panely, sloupce a řazení": {
+   "en": [
+    "Panes, columns and sorting",
+    "## Columns",
+    "Name\tthe file name; folders are in [square brackets] and blue",
+    "Type\tthe kind of file as Windows names it (e.g. “Microsoft Excel Worksheet”)",
+    "Size\tthe file size, <DIR> for folders",
+    "Modified\tdate and time of the last change",
+    "",
+    "## Sorting",
+    "• A click on a column heading sorts the pane by it. A second click on the same heading reverses the order.",
+    "• The column the pane is sorted by has an arrow in its heading: `▲` ascending (A→Z, smallest first, oldest first), `▼` descending.",
+    "• Folders are always at the top and are sorted separately in the same way.",
+    "",
+    "## Marked and selected items",
+    "• Space or Insert marks an item (red). Marked items take precedence over the selection: F5, F6, F8 and the tools work with the marked items, and with the selected ones when nothing is marked.",
+    "• After a successful copy or move the marks are cleared, also when you go to another folder.",
+    "• The status line below a pane shows the number and size of the selected / marked items."
+   ],
+   "de": [
+    "Panels, Spalten und Sortierung",
+    "## Spalten",
+    "Name\tDateiname; Ordner stehen in [eckigen Klammern] und sind blau",
+    "Typ\tDateiart, wie Windows sie nennt (z. B. „Microsoft Excel-Arbeitsblatt“)",
+    "Größe\tDateigröße, bei Ordnern <DIR>",
+    "Geändert\tDatum und Uhrzeit der letzten Änderung",
+    "",
+    "## Sortierung",
+    "• Ein Klick auf eine Spaltenüberschrift sortiert das Panel danach. Ein zweiter Klick auf dieselbe Überschrift kehrt die Reihenfolge um.",
+    "• Die Spalte, nach der sortiert wird, hat einen Pfeil in der Überschrift: `▲` aufsteigend (A→Z, kleinste zuerst, älteste zuerst), `▼` absteigend.",
+    "• Ordner stehen immer oben und werden getrennt auf dieselbe Weise sortiert.",
+    "",
+    "## Markierte und ausgewählte Elemente",
+    "• Leertaste oder Einfg markiert ein Element (rot). Markierte haben Vorrang vor der Auswahl: F5, F6, F8 und die Tools arbeiten mit den markierten Elementen, und wenn keine markiert sind, mit den ausgewählten.",
+    "• Nach erfolgreichem Kopieren oder Verschieben wird die Markierung aufgehoben, ebenso beim Wechsel in einen anderen Ordner.",
+    "• Die Statuszeile unter dem Panel zeigt Anzahl und Größe der ausgewählten / markierten Elemente."
+   ],
+   "pl": [
+    "Panele, kolumny i sortowanie",
+    "## Kolumny",
+    "Nazwa\tnazwa pliku; foldery są w [nawiasach kwadratowych] i na niebiesko",
+    "Typ\trodzaj pliku tak, jak nazywa go Windows (np. „Arkusz programu Microsoft Excel”)",
+    "Rozmiar\trozmiar pliku, dla folderów <DIR>",
+    "Zmieniono\tdata i godzina ostatniej zmiany",
+    "",
+    "## Sortowanie",
+    "• Kliknięcie nagłówka kolumny sortuje panel według niej. Drugie kliknięcie tego samego nagłówka odwraca kolejność.",
+    "• Kolumna, według której panel jest posortowany, ma w nagłówku strzałkę: `▲` rosnąco (A→Z, od najmniejszego, od najstarszego), `▼` malejąco.",
+    "• Foldery są zawsze na górze i są sortowane osobno w ten sam sposób.",
+    "",
+    "## Elementy zaznaczone i wybrane",
+    "• Spacja lub Insert zaznacza element (na czerwono). Zaznaczone mają pierwszeństwo przed wyborem: F5, F6, F8 i narzędzia pracują z zaznaczonymi, a gdy żadnych nie ma – z wybranymi.",
+    "• Po udanym kopiowaniu lub przenoszeniu zaznaczenie znika, także przy przejściu do innego folderu.",
+    "• Wiersz stanu pod panelem pokazuje liczbę i rozmiar wybranych / zaznaczonych elementów."
+   ]
+  },
+  "Kopírování, přesun a mazání": {
+   "en": [
+    "Copying, moving and deleting",
+    "## F5 copy, F6 move",
+    "• Items are copied from the active pane into the folder of the other pane (or where you drag them with the mouse).",
+    "• The program asks for confirmation first.",
+    "• For files from 16 MB up it shows the progress in percent. `Esc` stops the copying.",
+    "• A file is first written to a temporary file and replaces the target only when it is complete, so an interrupted copy never damages an existing file.",
+    "",
+    "## When an item already exists in the target",
+    "The program shows how many items are already in the target and **warns about files that are NEWER in the target** than the ones you are copying (with both dates). Then it offers:",
+    "Overwrite older only\treplaces only files that are older in the target; newer and equally old ones are kept (the default choice)",
+    "Overwrite all\treplaces everything, newer files too",
+    "Skip existing\tleaves existing items alone, copies only new ones",
+    "Cancel\tdoes nothing",
+    "• Folders are merged; the choice applies to every file inside.",
+    "• When moving, a file that was not overwritten stays in the source – nothing is lost.",
+    "",
+    "## F8 delete",
+    "• Deletes to the Recycle Bin. A network drive has no Recycle Bin – the program warns that the items will be deleted permanently.",
+    "",
+    "## F2 rename",
+    "• The name is edited directly in the row, preselected without the extension. `Enter` confirms, `Esc` cancels.",
+    "• It never overwrites an existing item."
+   ],
+   "de": [
+    "Kopieren, Verschieben und Löschen",
+    "## F5 kopieren, F6 verschieben",
+    "• Kopiert wird vom aktiven Panel in den Ordner des anderen Panels (oder dorthin, wohin man die Elemente mit der Maus zieht).",
+    "• Das Programm fragt zuerst nach einer Bestätigung.",
+    "• Bei Dateien ab 16 MB zeigt es den Fortschritt in Prozent. `Esc` bricht das Kopieren ab.",
+    "• Eine Datei wird zuerst in eine temporäre Datei geschrieben und ersetzt das Ziel erst, wenn sie vollständig ist. Ein abgebrochenes Kopieren beschädigt also nie eine vorhandene Datei.",
+    "",
+    "## Wenn ein Element im Ziel bereits existiert",
+    "Das Programm zeigt, wie viele Elemente im Ziel schon vorhanden sind, und **warnt vor Dateien, die im Ziel NEUER sind** als die kopierten (mit beiden Datumsangaben). Dann bietet es an:",
+    "Nur ältere überschreiben\tersetzt nur Dateien, die im Ziel älter sind; neuere und gleich alte bleiben (Standardwahl)",
+    "Alle überschreiben\tersetzt alles, auch neuere Dateien",
+    "Vorhandene überspringen\tlässt vorhandene Elemente unverändert, kopiert nur neue",
+    "Abbrechen\ttut nichts",
+    "• Ordner werden zusammengeführt; die Wahl gilt für jede Datei darin.",
+    "• Beim Verschieben bleibt eine nicht überschriebene Datei in der Quelle – nichts geht verloren.",
+    "",
+    "## F8 löschen",
+    "• Löscht in den Papierkorb. Ein Netzlaufwerk hat keinen Papierkorb – das Programm warnt, dass endgültig gelöscht wird.",
+    "",
+    "## F2 umbenennen",
+    "• Der Name wird direkt in der Zeile bearbeitet, vorausgewählt ohne Erweiterung. `Enter` bestätigt, `Esc` bricht ab.",
+    "• Ein vorhandenes Element wird nie überschrieben."
+   ],
+   "pl": [
+    "Kopiowanie, przenoszenie i usuwanie",
+    "## F5 kopiuj, F6 przenieś",
+    "• Kopiuje się z aktywnego panelu do folderu drugiego panelu (albo tam, dokąd przeciągniesz elementy myszą).",
+    "• Program najpierw prosi o potwierdzenie.",
+    "• Dla plików od 16 MB pokazuje postęp w procentach. `Esc` przerywa kopiowanie.",
+    "• Plik jest najpierw zapisywany do pliku tymczasowego i zastępuje plik docelowy dopiero po zakończeniu, więc przerwane kopiowanie nigdy nie uszkodzi istniejącego pliku.",
+    "",
+    "## Gdy element już istnieje w miejscu docelowym",
+    "Program pokazuje, ile elementów już jest w miejscu docelowym, i **ostrzega przed plikami, które są tam NOWSZE** niż kopiowane (z obiema datami). Następnie proponuje:",
+    "Zastąp tylko starsze\tzastępuje tylko pliki, które w miejscu docelowym są starsze; nowsze i tak samo stare zostawia (wybór domyślny)",
+    "Zastąp wszystko\tzastępuje wszystko, także nowsze pliki",
+    "Pomiń istniejące\tzostawia istniejące elementy, kopiuje tylko nowe",
+    "Anuluj\tnic nie robi",
+    "• Foldery zostaną scalone; wybór dotyczy każdego pliku w środku.",
+    "• Przy przenoszeniu plik, który nie został zastąpiony, pozostaje w źródle – nic nie przepada.",
+    "",
+    "## F8 usuń",
+    "• Usuwa do Kosza. Dysk sieciowy nie ma Kosza – program ostrzega, że elementy zostaną usunięte trwale.",
+    "",
+    "## F2 zmiana nazwy",
+    "• Nazwę edytuje się bezpośrednio w wierszu, wstępnie zaznaczona jest bez rozszerzenia. `Enter` zatwierdza, `Esc` anuluje.",
+    "• Nigdy nie zastępuje istniejącego elementu."
+   ]
+  },
+  "Oblíbené a nastavení": {
+   "en": [
+    "Favorites and settings",
+    "## Favorite folders",
+    "• The bar above the panes: a click opens the folder in the active pane, the right button offers the other pane or removing it.",
+    "• `+ Add` saves the folder of the active pane. The Favorites menu (Ctrl+D) does the same.",
+    "• The list is in the file `oblibene.json` next to the program.",
+    "",
+    "## Start folders",
+    "• File → Save the current folders as start folders. They are stored in `dvojpanel.json`.",
+    "",
+    "## Comparing folders (Ctrl+S)",
+    "• Compares the folders of the left and the right pane, shows the differences and suggests the copy direction (the newer one wins).",
+    "• Change the action of rows with the arrows → / ← or with the space bar (do nothing). Synchronizing only copies, it never deletes.",
+    "",
+    "## Font size",
+    "• `Ctrl++` makes the font larger, `Ctrl+-` smaller, `Ctrl+0` returns to the default size (also in the File menu). It changes the panes, menus, buttons, the output of tools and the help.",
+    "• The size is stored in `dvojpanel.json` as `velikost_pisma` (a whole number from 6 to 24, default 9) and applies after the next start too. You can also write it there by hand: File → Edit dvojpanel.json, then Reload settings.",
+    "• System windows with a question (Yes / No, choosing a file) are drawn by Windows and do not change their size.",
+    "",
+    "## Language",
+    "• File → Jazyk / Language switches the program to Czech, English, German or Polish: menus, buttons, messages and this help. The change applies at once and is stored in `dvojpanel.json` as `jazyk` (`cs`, `en`, `de`, `pl`).",
+    "• The translations are in the file `preklady.json` next to the program. When it is missing, the program stays Czech and says so.",
+    "• The keys in `nastroje.json` stay Czech, and so do the names and descriptions of tools as written there. System windows (Yes / No, choosing a file) are in the language of Windows.",
+    "",
+    "## Git pull (Ctrl+G)",
+    "• Commands → Git pull in the current folder downloads the new version of a project: it runs `git pull --ff-only` in the repository the folder of the active pane belongs to (any of its subfolders will do).",
+    "• The output of git is in the bottom panel, ending with ■ Done or ■ Ended with an error. Then the panes are refreshed and the tools are loaded again, so new tools of the project are in the menu at once.",
+    "• `--ff-only` means that git only moves the folder to the newer version. When the folder has its own commits or changes that would clash with the new version, git ends with an error and **overwrites nothing**.",
+    "• After an update of Dvojpanel itself the program reminds you that the new version applies only after it is started again.",
+    "• A folder outside a repository or a missing git program: the program says so and runs nothing.",
+    "",
+    "## A shortcut on the taskbar",
+    "• File → Create a shortcut in the Start menu, then Start → “Dvojpanel” → right-click → Pin."
+   ],
+   "de": [
+    "Favoriten und Einstellungen",
+    "## Favoritenordner",
+    "• Die Leiste über den Panels: ein Klick öffnet den Ordner im aktiven Panel, die rechte Maustaste bietet das andere Panel oder das Entfernen an.",
+    "• `+ Hinzufügen` speichert den Ordner des aktiven Panels. Das Menü Favoriten (Ctrl+D) kann dasselbe.",
+    "• Die Liste steht in der Datei `oblibene.json` neben dem Programm.",
+    "",
+    "## Startordner",
+    "• Datei → Aktuelle Ordner als Startordner speichern. Sie werden in `dvojpanel.json` gespeichert.",
+    "",
+    "## Ordner vergleichen (Ctrl+S)",
+    "• Vergleicht die Ordner des linken und rechten Panels, zeigt die Unterschiede und schlägt die Kopierrichtung vor (die neuere Datei gewinnt).",
+    "• Die Aktion der Zeilen ändert man mit den Pfeilen → / ← oder mit der Leertaste (nichts tun). Die Synchronisierung kopiert nur, sie löscht nie.",
+    "",
+    "## Schriftgröße",
+    "• `Ctrl++` vergrößert die Schrift, `Ctrl+-` verkleinert sie, `Ctrl+0` stellt die Standardgröße wieder her (auch im Menü Datei). Es ändern sich Panels, Menüs, Schaltflächen, die Ausgabe der Tools und die Hilfe.",
+    "• Die Größe wird in `dvojpanel.json` als `velikost_pisma` gespeichert (ganze Zahl von 6 bis 24, Standard 9) und gilt auch nach dem nächsten Start. Man kann sie dort auch von Hand eintragen: Datei → dvojpanel.json bearbeiten, dann Einstellungen neu laden.",
+    "• Systemfenster mit einer Frage (Ja / Nein, Dateiauswahl) zeichnet Windows; ihre Größe ändert sich nicht.",
+    "",
+    "## Sprache",
+    "• Datei → Jazyk / Language schaltet das Programm auf Tschechisch, Englisch, Deutsch oder Polnisch um: Menüs, Schaltflächen, Meldungen und diese Hilfe. Die Änderung gilt sofort und wird in `dvojpanel.json` als `jazyk` gespeichert (`cs`, `en`, `de`, `pl`).",
+    "• Die Übersetzungen stehen in der Datei `preklady.json` neben dem Programm. Fehlt sie, bleibt das Programm tschechisch und meldet das.",
+    "• Tschechisch bleiben die Schlüssel in `nastroje.json` sowie die Namen und Beschreibungen der Tools, wie sie dort stehen. Systemfenster (Ja / Nein, Dateiauswahl) erscheinen in der Sprache von Windows.",
+    "",
+    "## Git pull (Ctrl+G)",
+    "• Befehle → Git pull im aktuellen Ordner lädt die neue Version eines Projekts: es startet `git pull --ff-only` in dem Repository, zu dem der Ordner des aktiven Panels gehört (ein beliebiger Unterordner genügt).",
+    "• Die Ausgabe von git steht im unteren Bereich, am Ende ■ Fertig oder ■ Mit Fehler beendet. Danach werden die Panels aktualisiert und die Tools neu geladen, neue Tools des Projekts sind also sofort im Menü.",
+    "• `--ff-only` bedeutet, dass git den Ordner nur auf die neuere Version vorrückt. Gibt es im Ordner eigene Commits oder Änderungen, die mit der neuen Version kollidieren würden, endet git mit einem Fehler und **überschreibt nichts**.",
+    "• Nach einer Aktualisierung von Dvojpanel selbst erinnert das Programm daran, dass die neue Version erst nach einem Neustart gilt.",
+    "• Ein Ordner außerhalb eines Repositorys oder ein fehlendes Programm git: das Programm meldet es und startet nichts.",
+    "",
+    "## Verknüpfung in der Taskleiste",
+    "• Datei → Verknüpfung im Startmenü erstellen, dann Start → „Dvojpanel“ → Rechtsklick → Anheften."
+   ],
+   "pl": [
+    "Ulubione i ustawienia",
+    "## Ulubione foldery",
+    "• Pasek nad panelami: kliknięcie otwiera folder w aktywnym panelu, prawy przycisk proponuje drugi panel albo usunięcie.",
+    "• `+ Dodaj` zapisuje folder aktywnego panelu. Menu Ulubione (Ctrl+D) robi to samo.",
+    "• Lista jest w pliku `oblibene.json` obok programu.",
+    "",
+    "## Foldery startowe",
+    "• Plik → Zapisz bieżące foldery jako startowe. Zostaną zapisane w `dvojpanel.json`.",
+    "",
+    "## Porównanie folderów (Ctrl+S)",
+    "• Porównuje foldery lewego i prawego panelu, pokazuje różnice i proponuje kierunek kopiowania (wygrywa nowszy).",
+    "• Akcję dla wierszy zmienisz strzałkami → / ← albo spacją (nic nie rób). Synchronizacja tylko kopiuje, nigdy nie usuwa.",
+    "",
+    "## Rozmiar czcionki",
+    "• `Ctrl++` powiększa czcionkę, `Ctrl+-` zmniejsza, `Ctrl+0` przywraca rozmiar domyślny (także w menu Plik). Zmieniają się panele, menu, przyciski, wyjście narzędzi i pomoc.",
+    "• Rozmiar zapisuje się w `dvojpanel.json` jako `velikost_pisma` (liczba całkowita od 6 do 24, domyślnie 9) i obowiązuje także po ponownym uruchomieniu. Można go tam też wpisać ręcznie: Plik → Edytuj dvojpanel.json, potem Wczytaj ustawienia ponownie.",
+    "• Okna systemowe z pytaniem (Tak / Nie, wybór pliku) rysuje Windows i ich rozmiar się nie zmienia.",
+    "",
+    "## Język",
+    "• Plik → Jazyk / Language przełącza program na czeski, angielski, niemiecki lub polski: menu, przyciski, komunikaty i tę pomoc. Zmiana działa od razu i zapisuje się w `dvojpanel.json` jako `jazyk` (`cs`, `en`, `de`, `pl`).",
+    "• Tłumaczenia są w pliku `preklady.json` obok programu. Gdy go brakuje, program pozostaje po czesku i informuje o tym.",
+    "• Po czesku pozostają klucze w `nastroje.json` oraz nazwy i opisy narzędzi, tak jak są tam zapisane. Okna systemowe (Tak / Nie, wybór pliku) są w języku Windows.",
+    "",
+    "## Git pull (Ctrl+G)",
+    "• Polecenia → Git pull w bieżącym folderze pobiera nową wersję projektu: uruchamia `git pull --ff-only` w repozytorium, do którego należy folder aktywnego panelu (wystarczy dowolny jego podfolder).",
+    "• Wyjście gita jest w dolnym panelu, na końcu ■ Gotowe albo ■ Zakończono z błędem. Potem panele się odświeżają, a narzędzia są wczytywane ponownie, więc nowe narzędzia projektu są od razu w menu.",
+    "• `--ff-only` oznacza, że git tylko przesuwa folder do nowszej wersji. Gdy w folderze są własne commity albo zmiany, które kolidowałyby z nową wersją, git kończy się błędem i **niczego nie nadpisuje**.",
+    "• Po aktualizacji samego Dvojpanelu program przypomina, że nowa wersja obowiązuje dopiero po ponownym uruchomieniu.",
+    "• Folder poza repozytorium albo brak programu git: program o tym informuje i niczego nie uruchamia.",
+    "",
+    "## Skrót na pasku zadań",
+    "• Plik → Utwórz skrót w menu Start, potem Start → „Dvojpanel” → prawym przyciskiem → Przypnij."
+   ]
+  },
+  "Nástroje – jak je používat": {
+   "en": [
+    "Tools – how to use them",
+    "Tools are your own scripts (Python, .bat, .exe) that Dvojpanel runs on the files and folders in the panes. `F9` or the Tools menu opens the list; the tools of a project (e.g. Windchill) are in a submenu.",
+    "",
+    "## What happens when a tool is started",
+    "1. The program checks that you have selected what the tool needs (a file under the cursor, marked files, the right extension). If not, it says what is missing and runs nothing.",
+    "2. When the tool needs a value (e.g. part numbers PN or a CR number), **it asks in a window**.",
+    "3. When it needs a file, it opens a window for choosing a file (the caption in the title says which file it wants).",
+    "4. The tool runs in the background and its output is shown in the bottom panel. It starts with ▶ and the name and ends with ■ Done, or ■ Ended with an error.",
+    "5. When it has finished, the panes are refreshed; some tools open the folder with the results in the other pane.",
+    "",
+    "## A tool that asks by itself (started without parameters)",
+    "Some scripts ask by themselves when started without parameters – they offer choices (“Volba [1]:”) or want a PN or CR number. Dvojpanel recognizes such a question and **opens an input window**: at the top is what the tool printed (e.g. the list of choices), below it the question and a field for the answer.",
+    "Enter\tsends the answer (an empty one too – the script then uses its default choice)",
+    "Esc / End input\tends the input; the script ends as if it got the end of file",
+    "• There may be several questions in a row, the window is shown for each of them.",
+    "• A question is recognized when it ends with a colon, a question mark, `]` or `>`, and also the prompt “press any key”.",
+    "",
+    "## Preview and confirmation",
+    "Tools that write something (e.g. filling in the PN overview) first run **as a preview**: they write nothing and only print what they would change. Then the program asks **Make the changes for real?** Yes starts the writing, No changes nothing. The values and files entered for the preview apply to the writing too, it does not ask a second time. When the preview finds nothing to change, the program says so and asks nothing.",
+    "",
+    "## More",
+    "• Only one tool runs at a time. It can be stopped in the menu Tools → Stop the running tool.",
+    "• Tools → Clear the output empties the output.",
+    "• The list of your tools with a description of what each does and needs is in the topic My tools."
+   ],
+   "de": [
+    "Tools – Verwendung",
+    "Tools sind eigene Skripte (Python, .bat, .exe), die Dvojpanel auf die Dateien und Ordner in den Panels anwendet. Die Liste öffnet `F9` oder das Menü Tools; die Tools eines Projekts (z. B. Windchill) stehen in einem Untermenü.",
+    "",
+    "## Was nach dem Start eines Tools geschieht",
+    "1. Das Programm prüft, ob ausgewählt ist, was das Tool braucht (Datei unter dem Cursor, markierte Dateien, richtige Erweiterung). Wenn nicht, sagt es, was fehlt, und startet nichts.",
+    "2. Braucht das Tool einen Wert (z. B. Teilenummern PN oder eine CR-Nummer), **fragt es in einem Fenster**.",
+    "3. Braucht es eine Datei, öffnet es ein Fenster zur Dateiauswahl (die Beschriftung im Titel sagt, welche Datei gemeint ist).",
+    "4. Das Tool läuft im Hintergrund, seine Ausgabe erscheint im unteren Bereich. Am Anfang steht ▶ und der Name, am Ende ■ Fertig oder ■ Mit Fehler beendet.",
+    "5. Nach dem Ende werden die Panels aktualisiert; manche Tools öffnen den Ordner mit den Ergebnissen im anderen Panel.",
+    "",
+    "## Ein Tool, das selbst fragt (ohne Parameter gestartet)",
+    "Manche Skripte fragen selbst, wenn sie ohne Parameter gestartet werden – sie bieten Auswahlmöglichkeiten an („Volba [1]:“) oder wollen eine PN- oder CR-Nummer. Dvojpanel erkennt eine solche Frage und **öffnet ein Eingabefenster**: oben steht, was das Tool ausgegeben hat (z. B. die Auswahlliste), darunter die Frage und ein Feld für die Antwort.",
+    "Enter\tsendet die Antwort (auch eine leere – das Skript verwendet dann seine Standardwahl)",
+    "Esc / Eingabe beenden\tbeendet die Eingabe; das Skript endet, als hätte es das Dateiende erhalten",
+    "• Es können mehrere Fragen nacheinander kommen, das Fenster erscheint für jede.",
+    "• Erkannt wird eine Frage, die mit Doppelpunkt, Fragezeichen, `]` oder `>` endet, sowie die Aufforderung „beliebige Taste drücken“.",
+    "",
+    "## Vorschau und Bestätigung",
+    "Tools, die etwas schreiben (z. B. das Ergänzen der PN-Übersicht), laufen zuerst **als Vorschau**: sie schreiben nichts und geben nur aus, was sie ändern würden. Dann fragt das Programm **Änderungen wirklich durchführen?** Ja startet das Schreiben, Nein ändert nichts. Die für die Vorschau eingegebenen Werte und Dateien gelten auch für das Schreiben, es wird nicht noch einmal gefragt. Findet die Vorschau nichts zu ändern, meldet das Programm es und fragt nichts.",
+    "",
+    "## Weiteres",
+    "• Es läuft immer nur ein Tool. Stoppen kann man es im Menü Tools → Laufendes Tool stoppen.",
+    "• Tools → Ausgabe löschen leert die Ausgabe.",
+    "• Die Liste deiner Tools mit der Beschreibung, was jedes tut und braucht, steht im Thema Meine Tools."
+   ],
+   "pl": [
+    "Narzędzia – jak ich używać",
+    "Narzędzia to własne skrypty (Python, .bat, .exe), które Dvojpanel uruchamia na plikach i folderach w panelach. Listę otwiera `F9` albo menu Narzędzia; narzędzia projektu (np. Windchill) są w podmenu.",
+    "",
+    "## Co się dzieje po uruchomieniu narzędzia",
+    "1. Program sprawdza, czy wybrano to, czego narzędzie potrzebuje (plik pod kursorem, zaznaczone pliki, właściwe rozszerzenie). Jeśli nie, mówi, czego brakuje, i niczego nie uruchamia.",
+    "2. Gdy narzędzie potrzebuje wartości (np. numerów części PN albo numeru CR), **pyta w oknie**.",
+    "3. Gdy potrzebuje pliku, otwiera okno wyboru pliku (opis w tytule mówi, o który plik chodzi).",
+    "4. Narzędzie działa w tle, a jego wyjście pojawia się w dolnym panelu. Na początku jest ▶ i nazwa, na końcu ■ Gotowe albo ■ Zakończono z błędem.",
+    "5. Po zakończeniu panele się odświeżają; niektóre narzędzia otwierają folder z wynikami w drugim panelu.",
+    "",
+    "## Narzędzie, które samo pyta (uruchomione bez parametrów)",
+    "Niektóre skrypty uruchomione bez parametrów same zadają pytania – proponują opcje („Volba [1]:”) albo chcą numeru PN lub CR. Dvojpanel rozpoznaje takie pytanie i **otwiera okno wprowadzania**: u góry jest to, co narzędzie wypisało (np. lista opcji), pod spodem pytanie i pole na odpowiedź.",
+    "Enter\twysyła odpowiedź (także pustą – skrypt użyje wtedy domyślnego wyboru)",
+    "Esc / Zakończ wprowadzanie\tkończy wprowadzanie; skrypt kończy się tak, jakby dostał koniec pliku",
+    "• Pytań może być kilka po kolei, okno pojawia się dla każdego.",
+    "• Rozpoznawane jest pytanie zakończone dwukropkiem, znakiem zapytania, `]` lub `>` oraz wezwanie „naciśnij dowolny klawisz”.",
+    "",
+    "## Podgląd i potwierdzenie",
+    "Narzędzia, które coś zapisują (np. uzupełnianie przeglądu PN), działają najpierw **jako podgląd**: niczego nie zapisują, tylko wypisują, co by zmieniły. Potem program pyta **Wprowadzić zmiany naprawdę?** Tak uruchamia zapis, Nie niczego nie zmienia. Wartości i pliki podane dla podglądu obowiązują także przy zapisie, program nie pyta drugi raz. Gdy podgląd nie znajdzie nic do zmiany, program o tym informuje i o nic nie pyta.",
+    "",
+    "## Pozostałe",
+    "• Zawsze działa tylko jedno narzędzie. Można je zatrzymać w menu Narzędzia → Zatrzymaj działające narzędzie.",
+    "• Narzędzia → Wyczyść wyjście usuwa wypisany tekst.",
+    "• Lista twoich narzędzi z opisem, co każde robi i czego potrzebuje, jest w temacie Moje narzędzia."
+   ]
+  },
+  "Moje nástroje": {
+   "en": [
+    "My tools"
+   ],
+   "de": [
+    "Meine Tools"
+   ],
+   "pl": [
+    "Moje narzędzia"
+   ]
+  },
+  "Nástroje – nastavení": {
+   "en": [
+    "Tools – setup",
+    "The list of tools is in the file `nastroje.json` next to the program. At the first start it is created from the template `nastroje.example.json`. Edit it from the menu Tools → Edit nastroje.json, then Tools → Reload tools.",
+    "",
+    "## Project tools (Windchill)",
+    "The Windchill tools are not listed directly in `nastroje.json`. The Windchill project has its own list `dvojpanel_nastroje.json` and `nastroje.json` only refers to it (the key `vlozit`). The advantage: when the project is updated (git pull, in Dvojpanel `Ctrl+G` in the project folder), new tools appear in the menu by themselves.",
+    "",
+    "The template already contains the reference to `C:/Projects/MojeAplikace/Windchill/dvojpanel_nastroje.json`. When the Windchill tools are missing in the menu:",
+    "• at the top of the Tools menu there is ⚠ with the reason (most often “The included tool file does not exist” – the project is elsewhere),",
+    "• choose Tools → **Add project tools…** and pick the file `dvojpanel_nastroje.json` in the project folder. The program writes the reference into `nastroje.json` itself, nothing is typed by hand.",
+    "",
+    "## One tool in nastroje.json",
+    "nazev\tthe text in the menu (required)",
+    "skript\tthe path to the script .py, .bat, .cmd, .exe (required)",
+    "popis\tan explanation for the help (My tools)",
+    "argumenty\ta list of arguments, may contain placeholders",
+    "skupina\ta submenu in the Tools menu",
+    "pripony\tallowed file extensions, e.g. [\".xlsx\"]",
+    "nahled\tthe argument for a trial run, e.g. \"--jen-kontrola\"",
+    "zobrazit_slozku\tthe folder opened in the other pane after success",
+    "pracovni_slozka\tthe working folder (the default is the script's folder)",
+    "python\tanother Python, e.g. .venv/Scripts/python.exe",
+    "",
+    "## Placeholders in the arguments",
+    "{soubory}\tall marked / selected files in the active pane",
+    "{soubor}\tthe file under the cursor in the active pane",
+    "{soubor_cil}\tthe file under the cursor in the other pane",
+    "{slozka}\tthe folder of the active pane",
+    "{cil}\tthe folder of the other pane",
+    "{skript_slozka}\tthe folder of the script",
+    "{zadat:Popisek}\ta value the program asks for in a window",
+    "{vybrat_soubor:Popisek|.xlsx}\ta file chosen in the Open window",
+    "{ulozit_soubor:Popisek|.xlsx}\ta path from the Save as window",
+    "",
+    "Paths may use / and \\ and variables such as %USERPROFILE%. Relative paths in an included project file are relative to its folder. Details are in README.md."
+   ],
+   "de": [
+    "Tools – Einrichtung",
+    "Die Liste der Tools steht in der Datei `nastroje.json` neben dem Programm. Beim ersten Start wird sie aus der Vorlage `nastroje.example.json` erstellt. Bearbeiten kann man sie über das Menü Tools → nastroje.json bearbeiten, danach Tools → Tools neu laden.",
+    "",
+    "## Projekt-Tools (Windchill)",
+    "Die Windchill-Tools sind nicht direkt in `nastroje.json` aufgeführt. Das Projekt Windchill hat eine eigene Liste `dvojpanel_nastroje.json`, und `nastroje.json` verweist nur darauf (Schlüssel `vlozit`). Der Vorteil: wird das Projekt aktualisiert (git pull, in Dvojpanel `Ctrl+G` im Projektordner), erscheinen neue Tools von selbst im Menü.",
+    "",
+    "Die Vorlage enthält den Verweis auf `C:/Projects/MojeAplikace/Windchill/dvojpanel_nastroje.json` bereits. Wenn die Windchill-Tools im Menü fehlen:",
+    "• oben im Menü Tools steht ⚠ mit dem Grund (meist „Die eingebundene Tool-Datei existiert nicht“ – das Projekt liegt woanders),",
+    "• wähle Tools → **Projekt-Tools hinzufügen…** und die Datei `dvojpanel_nastroje.json` im Projektordner. Das Programm trägt den Verweis selbst in `nastroje.json` ein, nichts wird von Hand geschrieben.",
+    "",
+    "## Ein Tool in nastroje.json",
+    "nazev\tText im Menü (Pflicht)",
+    "skript\tPfad zum Skript .py, .bat, .cmd, .exe (Pflicht)",
+    "popis\tErklärung für die Hilfe (Meine Tools)",
+    "argumenty\tListe der Argumente, kann Platzhalter enthalten",
+    "skupina\tUntermenü im Menü Tools",
+    "pripony\terlaubte Dateierweiterungen, z. B. [\".xlsx\"]",
+    "nahled\tArgument für einen Probelauf, z. B. \"--jen-kontrola\"",
+    "zobrazit_slozku\tOrdner, der nach Erfolg im anderen Panel geöffnet wird",
+    "pracovni_slozka\tArbeitsordner (Standard ist der Ordner des Skripts)",
+    "python\tein anderes Python, z. B. .venv/Scripts/python.exe",
+    "",
+    "## Platzhalter in den Argumenten",
+    "{soubory}\talle markierten / ausgewählten Dateien im aktiven Panel",
+    "{soubor}\tdie Datei unter dem Cursor im aktiven Panel",
+    "{soubor_cil}\tdie Datei unter dem Cursor im anderen Panel",
+    "{slozka}\tder Ordner des aktiven Panels",
+    "{cil}\tder Ordner des anderen Panels",
+    "{skript_slozka}\tder Ordner des Skripts",
+    "{zadat:Popisek}\tein Wert, nach dem das Programm in einem Fenster fragt",
+    "{vybrat_soubor:Popisek|.xlsx}\teine im Fenster Öffnen gewählte Datei",
+    "{ulozit_soubor:Popisek|.xlsx}\tein Pfad aus dem Fenster Speichern unter",
+    "",
+    "Pfade können / und \\ sowie Variablen wie %USERPROFILE% verwenden. Relative Pfade in einer eingebundenen Projektdatei beziehen sich auf deren Ordner. Einzelheiten stehen in README.md."
+   ],
+   "pl": [
+    "Narzędzia – ustawienia",
+    "Lista narzędzi jest w pliku `nastroje.json` obok programu. Przy pierwszym uruchomieniu powstaje z szablonu `nastroje.example.json`. Można go edytować z menu Narzędzia → Edytuj nastroje.json, a potem Narzędzia → Wczytaj narzędzia ponownie.",
+    "",
+    "## Narzędzia projektu (Windchill)",
+    "Narzędzia Windchilla nie są wypisane bezpośrednio w `nastroje.json`. Projekt Windchill ma własną listę `dvojpanel_nastroje.json`, a `nastroje.json` tylko się do niej odwołuje (klucz `vlozit`). Zaleta: gdy projekt zostanie zaktualizowany (git pull, w Dvojpanelu `Ctrl+G` w folderze projektu), nowe narzędzia same pojawią się w menu.",
+    "",
+    "Szablon zawiera już odwołanie do `C:/Projects/MojeAplikace/Windchill/dvojpanel_nastroje.json`. Gdy narzędzi Windchilla brakuje w menu:",
+    "• u góry menu Narzędzia jest ⚠ z przyczyną (najczęściej „Dołączony plik narzędzi nie istnieje” – projekt jest gdzie indziej),",
+    "• wybierz Narzędzia → **Dodaj narzędzia projektu…** i wskaż plik `dvojpanel_nastroje.json` w folderze projektu. Program sam zapisze odwołanie w `nastroje.json`, niczego nie trzeba wpisywać ręcznie.",
+    "",
+    "## Jedno narzędzie w nastroje.json",
+    "nazev\ttekst w menu (wymagane)",
+    "skript\tścieżka do skryptu .py, .bat, .cmd, .exe (wymagane)",
+    "popis\twyjaśnienie do pomocy (Moje narzędzia)",
+    "argumenty\tlista argumentów, może zawierać symbole zastępcze",
+    "skupina\tpodmenu w menu Narzędzia",
+    "pripony\tdozwolone rozszerzenia plików, np. [\".xlsx\"]",
+    "nahled\targument dla uruchomienia próbnego, np. \"--jen-kontrola\"",
+    "zobrazit_slozku\tfolder otwierany po sukcesie w drugim panelu",
+    "pracovni_slozka\tfolder roboczy (domyślnie folder skryptu)",
+    "python\tinny Python, np. .venv/Scripts/python.exe",
+    "",
+    "## Symbole zastępcze w argumentach",
+    "{soubory}\twszystkie zaznaczone / wybrane pliki w aktywnym panelu",
+    "{soubor}\tplik pod kursorem w aktywnym panelu",
+    "{soubor_cil}\tplik pod kursorem w drugim panelu",
+    "{slozka}\tfolder aktywnego panelu",
+    "{cil}\tfolder drugiego panelu",
+    "{skript_slozka}\tfolder skryptu",
+    "{zadat:Popisek}\twartość, o którą program zapyta w oknie",
+    "{vybrat_soubor:Popisek|.xlsx}\tplik wybrany w oknie Otwórz",
+    "{ulozit_soubor:Popisek|.xlsx}\tścieżka z okna Zapisz jako",
+    "",
+    "Ścieżki mogą używać / oraz \\ i zmiennych takich jak %USERPROFILE%. Ścieżki względne w dołączonym pliku projektu odnoszą się do jego folderu. Szczegóły są w README.md."
+   ]
+  },
+  "Pro autory skriptů": {
+   "en": [
+    "For script authors",
+    "• The output (print) and errors are shown in the bottom panel, the encoding is UTF-8.",
+    "• Exit code 0 = success, anything else = an error. For a preview, 2 means “something needs attention” and writing is still possible.",
+    "• input() works: Dvojpanel shows the question in a window. The prompt should end with a colon or a question mark (“Číslo CR: ”). Esc in the window closes the input and input() ends with EOFError.",
+    "• The line DVOJPANEL:BEZ_ZMEN in a preview means “nothing to write” – the program then does not ask about writing. Lines starting with DVOJPANEL: are not shown in the output.",
+    "• The environment variable DVOJPANEL (the program version) says that the script runs from Dvojpanel. A .bat with pause or timeout can use it: if defined DVOJPANEL exit /b 0"
+   ],
+   "de": [
+    "Für Skriptautoren",
+    "• Ausgabe (print) und Fehler erscheinen im unteren Bereich, die Kodierung ist UTF-8.",
+    "• Rückgabecode 0 = Erfolg, alles andere = Fehler. Bei der Vorschau bedeutet 2 „etwas braucht Aufmerksamkeit“, das Schreiben ist weiterhin möglich.",
+    "• input() funktioniert: Dvojpanel zeigt die Frage in einem Fenster. Die Aufforderung sollte mit Doppelpunkt oder Fragezeichen enden („Číslo CR: “). Esc im Fenster schließt die Eingabe und input() endet mit EOFError.",
+    "• Die Zeile DVOJPANEL:BEZ_ZMEN in der Vorschau bedeutet „nichts zu schreiben“ – das Programm fragt dann nicht nach dem Schreiben. Zeilen, die mit DVOJPANEL: beginnen, werden in der Ausgabe nicht angezeigt.",
+    "• Die Umgebungsvariable DVOJPANEL (Programmversion) zeigt an, dass das Skript aus Dvojpanel läuft. Eine .bat mit pause oder timeout kann sie nutzen: if defined DVOJPANEL exit /b 0"
+   ],
+   "pl": [
+    "Dla autorów skryptów",
+    "• Wyjście (print) i błędy są pokazywane w dolnym panelu, kodowanie UTF-8.",
+    "• Kod wyjścia 0 = sukces, cokolwiek innego = błąd. W podglądzie 2 oznacza „coś wymaga uwagi”, a zapis jest nadal możliwy.",
+    "• input() działa: Dvojpanel pokazuje pytanie w oknie. Wezwanie powinno kończyć się dwukropkiem lub znakiem zapytania („Číslo CR: ”). Esc w oknie zamyka wprowadzanie i input() kończy się błędem EOFError.",
+    "• Wiersz DVOJPANEL:BEZ_ZMEN w podglądzie oznacza „nie ma czego zapisywać” – program nie pyta wtedy o zapis. Wiersze zaczynające się od DVOJPANEL: nie są pokazywane w wyjściu.",
+    "• Zmienna środowiskowa DVOJPANEL (wersja programu) informuje, że skrypt działa z Dvojpanelu. Plik .bat z pause lub timeout może jej użyć: if defined DVOJPANEL exit /b 0"
+   ]
+  }
+ }
+}

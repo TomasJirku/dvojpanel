@@ -42,6 +42,8 @@ Zástupce spouští `pythonw.exe` aktuálního Pythonu, takže se běžící okn
 | Ctrl+D | oblíbené složky |
 | Ctrl+S | porovnat a synchronizovat složky |
 | Ctrl+U | prohodit složky levého a pravého panelu |
+| Ctrl+G | git pull ve složce aktivního panelu |
+| Ctrl++ / Ctrl+- / Ctrl+0 | větší / menší / výchozí velikost písma |
 | Esc | přerušit probíhající kopírování / přesun |
 | Ctrl+R / Ctrl+Q | obnovit / konec |
 
@@ -80,6 +82,15 @@ U souborů od 16 MB se při kopírování ukazuje průběh v procentech ve stavo
 - Akci u vybraných řádků lze změnit klávesami → / ← / mezerník nebo tlačítky.
 - **Synchronizovat** jen kopíruje, nic nemaže. Před spuštěním vypíše soubory, které se přepíšou. Po dokončení se složky porovnají znovu.
 
+## Git pull
+
+**Příkazy → Git pull v aktuální složce** (Ctrl+G) spustí `git pull --ff-only` v repozitáři, do kterého patří složka aktivního panelu; stačí být v kterékoli jeho podsložce. Výpis gitu je v dolním panelu.
+
+- Po úspěšném stažení se panely obnoví a nástroje se načtou znovu, takže nové nástroje projektu (`dvojpanel_nastroje.json`) jsou hned v menu.
+- `--ff-only` jen posune složku na novější verzi. Když jsou ve složce vlastní commity nebo změny, které by se s novou verzí srazily, git skončí chybou a nic nepřepíše ani neslučuje.
+- Po aktualizaci samotného Dvojpanelu program připomene, že nová verze platí až po novém spuštění.
+- Složka mimo repozitář nebo chybějící `git` v PATH: program to oznámí a nic nespustí. Git se neptá na heslo v konzoli (`GIT_TERMINAL_PROMPT=0`); přihlášení řeší správce pověření gitu.
+
 ## Oblíbené složky
 
 Lišta nad panely ukazuje oblíbené složky jako tlačítka: klik otevře složku v aktivním panelu, pravé tlačítko nabídne otevření ve druhém panelu nebo odebrání, **+ Přidat** uloží složku aktivního panelu. Při úzkém okně se tlačítka zalomí do více řádků. Skrýt ji lze v menu **Oblíbené → Zobrazit lištu oblíbených**.
@@ -107,9 +118,15 @@ Seznam je v `oblibene.json` vedle `dvojpanel.py` (lokální, není v Gitu) a lze
 {
   "levy_panel": "C:/Projects/MojeAplikace/Windchill/vystupy",
   "pravy_panel": "\\\\server\\projekty",
-  "lista_oblibenych": true
+  "lista_oblibenych": true,
+  "velikost_pisma": 11,
+  "jazyk": "cs"
 }
 ```
+
+`jazyk` je jazyk programu: `cs` (výchozí), `en`, `de` nebo `pl`. Nejsnáz se přepne v menu **Soubor → Jazyk / Language** (položka se jmenuje stejně ve všech jazycích); změna platí hned pro menu, tlačítka, hlášky i nápovědu a do `dvojpanel.json` se zapíše sama. Překlady jsou v souboru `preklady.json` vedle `dvojpanel.py`; když chybí, program to ohlásí a zůstane česky. Česky zůstávají klíče v `nastroje.json` a názvy a popisy nástrojů, systémová okna Windows jsou v jazyce Windows.
+
+`velikost_pisma` je velikost písma v bodech (celé číslo 6 až 24, výchozí 9) pro panely, menu, tlačítka, výstup nástrojů i nápovědu. Rychleji ji změní **Ctrl++** / **Ctrl+-** a **Ctrl+0** vrátí výchozí (také v menu Soubor); hodnota se do `dvojpanel.json` zapíše sama. Systémová okna Windows (Ano / Ne, výběr souboru) velikost nemění.
 
 Všechny klíče jsou volitelné, výchozí je domovská složka (`%USERPROFILE%`) a zobrazená lišta. Cesty jako u nástrojů. Nedostupná složka nezablokuje start, program jen ohlásí chybu a panel zůstane v domovské složce.
 

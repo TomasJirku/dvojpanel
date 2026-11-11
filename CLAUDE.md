@@ -2,12 +2,15 @@
 
 ## Projekt
 Dvojpanel: dvoupanelový správce souborů pro Windows (tkinter) se spouštěním vlastních skriptů.
-Jeden soubor `dvojpanel.py`, verze v `__version__`.
+Jeden soubor `dvojpanel.py`, verze v `__version__`; překlady UI (en / de / pl) v `preklady.json` vedle něj.
 
 ## Tvrdá omezení
 - **Jen standardní knihovna Pythonu.** Cílový firemní PC má oficiální Python, ale nelze instalovat balíčky ani jiný software. Žádný `pip install`, žádné .exe balení.
 - Cílová platforma Windows, Python 3.14. Kód musí jít aspoň importovat i mimo Windows (Windows API jen za `IS_WINDOWS`, `ctypes` importovat lokálně).
-- UI texty česky, komentáře a identifikátory v kódu anglicky (klíče v `nastroje.json` jsou česky kvůli uživateli).
+- UI texty se v kódu píší česky a vždy přes `tr("…")` (proměnné části jako `tr("… {0} …").format(x)`, ne f-string;
+  texty definované při importu `tr_mark("…")` a `tr()` až v místě použití). Každý takový text musí mít překlad
+  en / de / pl v `preklady.json` (`texty`), témata nápovědy v `napoveda`; hlídá to `tests\v100.py`.
+  Komentáře a identifikátory v kódu anglicky (klíče v `nastroje.json` jsou česky kvůli uživateli).
 - Žádná tichá ztráta dat: mazání do koše, při kolizích se ptát, chyby vždy zobrazit.
 
 ## Konvence
