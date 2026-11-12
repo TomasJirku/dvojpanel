@@ -1269,6 +1269,66 @@
    "No group",
    "Ohne Gruppe",
    "Bez grupy"
+  ],
+  "dvojpanel.json: 'cesta_7zip' musí být cesta k 7z.exe (nebo prázdný text).": [
+   "dvojpanel.json: 'cesta_7zip' must be the path to 7z.exe (or an empty text).",
+   "dvojpanel.json: 'cesta_7zip' muss der Pfad zu 7z.exe sein (oder ein leerer Text).",
+   "dvojpanel.json: 'cesta_7zip' musi być ścieżką do 7z.exe (albo pustym tekstem)."
+  ],
+  "Zabalit položku pod kurzorem (7-Zip)…": [
+   "Pack the item under the cursor (7-Zip)…",
+   "Element unter dem Cursor packen (7-Zip)…",
+   "Spakuj element pod kursorem (7-Zip)…"
+  ],
+  "Zabalit (7-Zip)": [
+   "Pack (7-Zip)",
+   "Packen (7-Zip)",
+   "Spakuj (7-Zip)"
+  ],
+  "Nastav kurzor na složku nebo soubor, který se má zabalit.": [
+   "Put the cursor on the folder or file to be packed.",
+   "Setze den Cursor auf den Ordner oder die Datei, die gepackt werden soll.",
+   "Ustaw kursor na folderze albo pliku, który ma zostać spakowany."
+  ],
+  "Program 7-Zip (7z.exe) nebyl nalezen.\n\nNainstalovaný 7-Zip najde Dvojpanel sám. Jinak zapiš cestu k 7z.exe do dvojpanel.json jako \"cesta_7zip\" (Soubor → Upravit dvojpanel.json).": [
+   "The 7-Zip program (7z.exe) was not found.\n\nDvojpanel finds an installed 7-Zip by itself. Otherwise write the path to 7z.exe into dvojpanel.json as \"cesta_7zip\" (File → Edit dvojpanel.json).",
+   "Das Programm 7-Zip (7z.exe) wurde nicht gefunden.\n\nEin installiertes 7-Zip findet Dvojpanel selbst. Sonst trage den Pfad zu 7z.exe in dvojpanel.json als \"cesta_7zip\" ein (Datei → dvojpanel.json bearbeiten).",
+   "Nie znaleziono programu 7-Zip (7z.exe).\n\nZainstalowany 7-Zip Dvojpanel znajdzie sam. W przeciwnym razie wpisz ścieżkę do 7z.exe do dvojpanel.json jako \"cesta_7zip\" (Plik → Edytuj dvojpanel.json)."
+  ],
+  "Archiv nelze vytvořit, stejně se jmenuje složka:\n{0}": [
+   "The archive cannot be created, a folder has the same name:\n{0}",
+   "Das Archiv kann nicht erstellt werden, ein Ordner heißt genauso:\n{0}",
+   "Nie można utworzyć archiwum, tak samo nazywa się folder:\n{0}"
+  ],
+  "Archiv už existuje:\n{0}\n\nPřepsat ho novým?": [
+   "The archive already exists:\n{0}\n\nOverwrite it with a new one?",
+   "Das Archiv existiert bereits:\n{0}\n\nDurch ein neues ersetzen?",
+   "Archiwum już istnieje:\n{0}\n\nZastąpić je nowym?"
+  ],
+  "Zabalit:\n{0}\n\ndo archivu:\n{1}": [
+   "Pack:\n{0}\n\ninto the archive:\n{1}",
+   "Packen:\n{0}\n\nin das Archiv:\n{1}",
+   "Spakować:\n{0}\n\ndo archiwum:\n{1}"
+  ],
+  "  Archiv nevznikl.\n": [
+   "  No archive was created.\n",
+   "  Es wurde kein Archiv erstellt.\n",
+   "  Archiwum nie powstało.\n"
+  ],
+  "Archiv nelze uložit pod jeho jménem:\n{0}\n\nZůstal v souboru:\n{1}": [
+   "The archive cannot be saved under its name:\n{0}\n\nIt was left in the file:\n{1}",
+   "Das Archiv kann nicht unter seinem Namen gespeichert werden:\n{0}\n\nEs liegt in der Datei:\n{1}",
+   "Nie można zapisać archiwum pod jego nazwą:\n{0}\n\nZostało w pliku:\n{1}"
+  ],
+  "  Archiv: {0}\n": [
+   "  Archive: {0}\n",
+   "  Archiv: {0}\n",
+   "  Archiwum: {0}\n"
+  ],
+  "Archiv vznikl, ale 7-Zip hlásí varování – některé soubory v něm mohou chybět. Podrobnosti jsou ve výpisu v dolním panelu.\n\n{0}": [
+   "The archive was created, but 7-Zip reports a warning – some files may be missing in it. The details are in the output in the bottom panel.\n\n{0}",
+   "Das Archiv wurde erstellt, aber 7-Zip meldet eine Warnung – einige Dateien können darin fehlen. Einzelheiten stehen in der Ausgabe im unteren Bereich.\n\n{0}",
+   "Archiwum powstało, ale 7-Zip zgłasza ostrzeżenie – niektórych plików może w nim brakować. Szczegóły są w wyjściu w dolnym panelu.\n\n{0}"
   ]
  },
  "napoveda": {
@@ -1374,6 +1434,7 @@
     "F6\tmove to the other pane",
     "F7\tnew folder",
     "F8\tdelete to the Recycle Bin",
+    "Alt+F5\tpack the item under the cursor into a .7z archive (7-Zip)",
     "Esc\tstop a running copy / move",
     "",
     "## Commands",
@@ -1414,6 +1475,7 @@
     "F6\tin das andere Panel verschieben",
     "F7\tneuer Ordner",
     "F8\tin den Papierkorb löschen",
+    "Alt+F5\tElement unter dem Cursor in ein .7z-Archiv packen (7-Zip)",
     "Esc\tlaufendes Kopieren / Verschieben abbrechen",
     "",
     "## Befehle",
@@ -1454,6 +1516,7 @@
     "F6\tprzenieś do drugiego panelu",
     "F7\tnowy folder",
     "F8\tusuń do Kosza",
+    "Alt+F5\tspakuj element pod kursorem do archiwum .7z (7-Zip)",
     "Esc\tprzerwij trwające kopiowanie / przenoszenie",
     "",
     "## Polecenia",
@@ -1545,6 +1608,13 @@
     "## F8 delete",
     "• Deletes to the Recycle Bin. A network drive has no Recycle Bin – the program warns that the items will be deleted permanently.",
     "",
+    "## Alt+F5 pack (7-Zip)",
+    "• Packs the folder (or file) under the cursor into the archive `name.7z` in the same folder; also Commands → Pack the item under the cursor. The original stays as it is.",
+    "• The output of 7-Zip is in the bottom panel. Packing can be stopped in the menu Tools → Stop the running tool.",
+    "• The archive is written into a temporary file and gets its name only when it is complete. When it already exists, the program asks whether to overwrite it; after an error or a stop the old archive stays unchanged.",
+    "• When 7-Zip cannot read some files, the archive is created and the program warns about it.",
+    "• An installed 7-Zip is needed. When the program does not find it, write the path to `7z.exe` into `dvojpanel.json` as `cesta_7zip`.",
+    "",
     "## F2 rename",
     "• The name is edited directly in the row, preselected without the extension. `Enter` confirms, `Esc` cancels.",
     "• It never overwrites an existing item."
@@ -1569,6 +1639,13 @@
     "## F8 löschen",
     "• Löscht in den Papierkorb. Ein Netzlaufwerk hat keinen Papierkorb – das Programm warnt, dass endgültig gelöscht wird.",
     "",
+    "## Alt+F5 packen (7-Zip)",
+    "• Packt den Ordner (oder die Datei) unter dem Cursor in das Archiv `Name.7z` im selben Ordner; auch Befehle → Element unter dem Cursor packen. Das Original bleibt, wie es ist.",
+    "• Die Ausgabe von 7-Zip steht im unteren Bereich. Das Packen lässt sich im Menü Tools → Laufendes Tool stoppen anhalten.",
+    "• Das Archiv wird in eine temporäre Datei geschrieben und erhält seinen Namen erst nach dem Abschluss. Existiert es bereits, fragt das Programm, ob es überschrieben werden soll; bei einem Fehler oder Abbruch bleibt das alte Archiv unverändert.",
+    "• Kann 7-Zip einige Dateien nicht lesen, entsteht das Archiv und das Programm weist darauf hin.",
+    "• Ein installiertes 7-Zip ist nötig. Findet das Programm es nicht, trage den Pfad zu `7z.exe` in `dvojpanel.json` als `cesta_7zip` ein.",
+    "",
     "## F2 umbenennen",
     "• Der Name wird direkt in der Zeile bearbeitet, vorausgewählt ohne Erweiterung. `Enter` bestätigt, `Esc` bricht ab.",
     "• Ein vorhandenes Element wird nie überschrieben."
@@ -1592,6 +1669,13 @@
     "",
     "## F8 usuń",
     "• Usuwa do Kosza. Dysk sieciowy nie ma Kosza – program ostrzega, że elementy zostaną usunięte trwale.",
+    "",
+    "## Alt+F5 spakuj (7-Zip)",
+    "• Pakuje folder (albo plik) pod kursorem do archiwum `nazwa.7z` w tym samym folderze; także Polecenia → Spakuj element pod kursorem. Oryginał zostaje bez zmian.",
+    "• Wyjście 7-Zipa jest w dolnym panelu. Pakowanie można zatrzymać w menu Narzędzia → Zatrzymaj działające narzędzie.",
+    "• Archiwum jest zapisywane do pliku tymczasowego i dostaje swoją nazwę dopiero po zakończeniu. Gdy już istnieje, program pyta, czy je nadpisać; po błędzie albo zatrzymaniu stare archiwum zostaje bez zmian.",
+    "• Gdy 7-Zip nie odczyta niektórych plików, archiwum powstaje, a program o tym ostrzega.",
+    "• Potrzebny jest zainstalowany 7-Zip. Gdy program go nie znajdzie, wpisz ścieżkę do `7z.exe` do `dvojpanel.json` jako `cesta_7zip`.",
     "",
     "## F2 zmiana nazwy",
     "• Nazwę edytuje się bezpośrednio w wierszu, wstępnie zaznaczona jest bez rozszerzenia. `Enter` zatwierdza, `Esc` anuluje.",

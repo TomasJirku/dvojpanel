@@ -13,6 +13,7 @@ Ovládání:
   F2 přejmenovat (přímo v řádku, také pomalý druhý klik na jméno)
   F3 otevřít       F4 upravit v Notepadu
   F5 kopírovat     F6 přesunout    F7 nová složka   F8 smazat do koše
+  Alt+F5 zabalit položku pod kurzorem do archivu .7z (7-Zip)
   F9 nástroje (vlastní skripty z nastroje.json)
   Přetažení myší do druhého panelu nebo na složku = kopírovat, se Shiftem přesunout
   Ctrl+D oblíbené složky   Ctrl+S porovnat a synchronizovat složky   Ctrl+U prohodit panely
@@ -23,7 +24,7 @@ Ovládání:
   F1 nápověda (také vysvětlení všech nástrojů)
   Soubor → Jazyk / Language: čeština, English, Deutsch, Polski (dvojpanel.json: jazyk)
 """
-__version__ = "0.10.0"
+__version__ = "0.11.0"
 
 import codecs
 import json
@@ -65,6 +66,7 @@ FONT_SIZE_MIN, FONT_SIZE_MAX = 6, 24
 NAMED_FONTS = ("TkDefaultFont", "TkTextFont", "TkMenuFont", "TkHeadingFont", "TkCaptionFont",
                "TkSmallCaptionFont", "TkIconFont", "TkTooltipFont", "TkFixedFont")
 font_delta = 0  # chosen size minus the default one; set by App.apply_font_size
+ARCHIVE_TMP = ".dvojpanel-tmp"  # 7-Zip writes here; the archive gets its name only when it is complete
 GIT_PULL = {"nazev": "Git pull"}  # built-in command (Ctrl+G) that runs and logs like a tool
 INVALID_NAME_CHARS = '<>:"/\\|?*' if sys.platform == "win32" else "/"
 
@@ -214,6 +216,35 @@ def find_git_root(path):
         if parent == path:
             return None
         path = parent
+
+
+def find_7zip(configured=""):
+    """The 7-Zip command line program (7z.exe), or None. configured is "cesta_7zip" from dvojpanel.json.
+    7-Zip does not add itself to PATH, so its registry entry and the usual folders are tried too."""
+    if configured:
+        path = expand_path(configured)
+        return path if os.path.isfile(path) else None
+    for name in ("7z", "7za", "7zr"):
+        found = shutil.which(name)
+        if found:
+            return found
+    folders = []
+    if IS_WINDOWS:
+        import winreg
+        for hive in (winreg.HKEY_CURRENT_USER, winreg.HKEY_LOCAL_MACHINE):
+            for value in ("Path64", "Path"):
+                try:
+                    with winreg.OpenKey(hive, r"SOFTWARE\7-Zip") as reg_key:
+                        folders.append(str(winreg.QueryValueEx(reg_key, value)[0]))
+                except OSError:
+                    pass
+    folders += [os.path.join(os.environ[var], "7-Zip") for var in ("ProgramW6432", "ProgramFiles", "ProgramFiles(x86)")
+                if os.environ.get(var)]
+    for folder in folders:
+        exe = os.path.join(folder, "7z.exe")
+        if os.path.isfile(exe):
+            return exe
+    return None
 
 
 def file_version(path):
@@ -640,7 +671,7 @@ def write_json(path, data):
 # ---------------------------------------------------------------- settings (dvojpanel.json)
 
 SETTINGS_DEFAULTS = {"levy_panel": "%USERPROFILE%", "pravy_panel": "%USERPROFILE%", "lista_oblibenych": True,
-                     "velikost_pisma": DEFAULT_FONT_SIZE, "jazyk": "cs"}
+                     "velikost_pisma": DEFAULT_FONT_SIZE, "jazyk": "cs", "cesta_7zip": ""}
 
 
 def load_settings():
@@ -666,6 +697,8 @@ def load_settings():
     if data.get("jazyk", "cs") not in LANGUAGES:
         return settings, tr("dvojpanel.json: 'jazyk' musí být jedna z hodnot: {0}.").format(
             ", ".join(f'"{code}"' for code in LANGUAGES))
+    if not isinstance(data.get("cesta_7zip", ""), str):
+        return settings, tr("dvojpanel.json: 'cesta_7zip' musí být cesta k 7z.exe (nebo prázdný text).")
     settings.update(data)
     return settings, None
 
@@ -1647,6 +1680,7 @@ F5\tkopírovat do druhého panelu
 F6\tpřesunout do druhého panelu
 F7\tnová složka
 F8\tsmazat do koše
+Alt+F5\tzabalit položku pod kurzorem do archivu .7z (7-Zip)
 Esc\tpřerušit probíhající kopírování / přesun
 
 ## Příkazy
@@ -1695,6 +1729,16 @@ Storno\tnic neudělá
 
 ## F8 smazat
 • Maže do koše. Na síťovém disku koš není – program varuje, že se smaže trvale.
+
+## Alt+F5 zabalit (7-Zip)
+• Zabalí složku (nebo soubor) pod kurzorem do archivu `název.7z` ve stejné složce; také Příkazy → Zabalit \
+položku pod kurzorem. Originál zůstává, jak je.
+• Výpis 7-Zipu je v dolním panelu. Zastavit balení lze v menu Nástroje → Zastavit běžící nástroj.
+• Archiv se zapisuje do dočasného souboru a své jméno dostane až po dokončení. Když už existuje, program se \
+zeptá, jestli ho přepsat; při chybě nebo zastavení zůstane starý archiv beze změny.
+• Když 7-Zip některé soubory nepřečte, archiv vznikne a program na to upozorní.
+• Je potřeba nainstalovaný 7-Zip. Když ho program nenajde, zapiš cestu k `7z.exe` do `dvojpanel.json` \
+jako `cesta_7zip`.
 
 ## F2 přejmenovat
 • Jméno se upraví přímo v řádku, předvybrané je bez přípony. `Enter` potvrdí, `Esc` zruší.
@@ -2044,6 +2088,8 @@ class App(tk.Tk):
         self.tool_no_change = False
         self.tool_title = ""
         self.tool_asking = False  # the input window is open (or about to open)
+        self.tool_stopped = False  # the user stopped the running tool
+        self.archive_tmp = None  # the file 7-Zip is writing (Alt+F5)
 
         self.fav_bar = FavoritesBar(self, self)
         self.fav_bar_var = tk.BooleanVar(value=True)
@@ -2082,6 +2128,7 @@ class App(tk.Tk):
         self.bind("<Control-s>", lambda e: self.open_sync())
         self.bind("<Control-u>", lambda e: self.swap_panes())
         self.bind("<Control-g>", lambda e: self.git_pull())
+        self.bind("<Alt-F5>", lambda e: self.pack())
         for seq in ("<Control-plus>", "<Control-KP_Add>", "<Control-equal>"):
             self.bind(seq, lambda e: self.change_font_size(1))
         for seq in ("<Control-minus>", "<Control-KP_Subtract>"):
@@ -2544,6 +2591,8 @@ class App(tk.Tk):
         cmd_menu.add_command(label=tr("Porovnat a synchronizovat složky…"), accelerator="Ctrl+S",
                              command=self.open_sync)
         cmd_menu.add_command(label=tr("Prohodit panely"), accelerator="Ctrl+U", command=self.swap_panes)
+        cmd_menu.add_command(label=tr("Zabalit položku pod kurzorem (7-Zip)…"), accelerator="Alt+F5",
+                             command=self.pack)
         cmd_menu.add_separator()
         cmd_menu.add_command(label=tr("Git pull v aktuální složce"), accelerator="Ctrl+G", command=self.git_pull)
         menubar.add_cascade(label=tr("Příkazy"), menu=cmd_menu)
@@ -2881,6 +2930,76 @@ class App(tk.Tk):
         # --ff-only: never merges or rewrites local work; there is no console, so git must not ask there
         self.start_tool(GIT_PULL, [git, "pull", "--ff-only"], root, env={"GIT_TERMINAL_PROMPT": "0"})
 
+    def pack(self):
+        """Alt+F5: pack the folder (or file) under the cursor into <name>.7z next to it with 7-Zip; the
+        output goes to the log like a tool's."""
+        title = tr("Zabalit (7-Zip)")
+        if self.proc is not None:
+            messagebox.showinfo(tr("Nástroj běží"),
+                                tr("Počkej, až doběhne předchozí nástroj, nebo ho zastav v menu Nástroje."))
+            return
+        if self.is_busy():
+            return
+        source = self.active.tree.focus()
+        if not source or source == UP:
+            messagebox.showinfo(title, tr("Nastav kurzor na složku nebo soubor, který se má zabalit."))
+            return
+        exe = find_7zip(self.settings["cesta_7zip"])
+        if exe is None:
+            messagebox.showerror(title, tr("Program 7-Zip (7z.exe) nebyl nalezen.\n\nNainstalovaný 7-Zip najde "
+                                           "Dvojpanel sám. Jinak zapiš cestu k 7z.exe do dvojpanel.json jako "
+                                           "\"cesta_7zip\" (Soubor → Upravit dvojpanel.json)."))
+            return
+        target = source + ".7z"
+        if os.path.isdir(target):
+            messagebox.showerror(title, tr("Archiv nelze vytvořit, stejně se jmenuje složka:\n{0}").format(target))
+            return
+        if os.path.lexists(target):
+            if not messagebox.askyesno(title, tr("Archiv už existuje:\n{0}\n\nPřepsat ho novým?").format(target),
+                                       icon="warning"):
+                return
+        elif not messagebox.askokcancel(title, tr("Zabalit:\n{0}\n\ndo archivu:\n{1}").format(source, target)):
+            return
+        tmp = target + ARCHIVE_TMP
+        try:
+            if os.path.lexists(tmp):  # left by a run that was killed; 7-Zip would add to it
+                os.remove(tmp)
+        except OSError as e:
+            messagebox.showerror(title, str(e))
+            return
+        self.archive_tmp = tmp
+        # -ssw: also files another program has open for writing; -scc: output in the encoding the log expects;
+        # full paths: a name starting with - or @ cannot be taken for a switch or a list file
+        cmd = [exe, "a", "-t7z", "-bd", "-y", "-ssw", "-sccUTF-8", "--", tmp, source]
+        self.start_tool({"nazev": title, "archive": (tmp, target)}, cmd, os.path.dirname(source))
+
+    def finish_archive(self, tool, returncode):
+        """7-Zip ended: a complete archive gets its real name (replacing an older one the user agreed to
+        overwrite), anything else is removed. Returns the return code to report."""
+        tmp, target = tool["archive"]
+        self.archive_tmp = None
+        # 1 = 7-Zip's warning: the archive is complete except for files it could not read
+        if returncode not in (0, 1) or self.tool_stopped:
+            try:
+                os.remove(tmp)
+            except OSError:
+                pass
+            self.log(tr("  Archiv nevznikl.\n"))
+            return returncode or 1
+        try:
+            os.replace(tmp, target)
+        except OSError as e:
+            self.log(f"  {e}\n")
+            messagebox.showerror(tool["nazev"], tr("Archiv nelze uložit pod jeho jménem:\n{0}\n\nZůstal "
+                                                   "v souboru:\n{1}").format(e, tmp))
+            return returncode or 1
+        self.log(tr("  Archiv: {0}\n").format(target))
+        if returncode == 1:
+            messagebox.showwarning(tool["nazev"], tr("Archiv vznikl, ale 7-Zip hlásí varování – některé soubory "
+                                                     "v něm mohou chybět. Podrobnosti jsou ve výpisu v dolním "
+                                                     "panelu.\n\n{0}").format(target))
+        return returncode
+
     def start_tool(self, tool, cmd, cwd, real=None, env=None):
         """Run a tool; real=(cmd, cwd) makes this the preview whose result asks before the real run.
         env adds environment variables."""
@@ -2896,9 +3015,10 @@ class App(tk.Tk):
                 stderr=subprocess.STDOUT, creationflags=subprocess.CREATE_NO_WINDOW if IS_WINDOWS else 0)
         except OSError as e:
             self.log(tr("  Nelze spustit: {0}\n").format(e))
+            self.archive_tmp = None
             return
         self.proc = proc
-        self.tool_out, self.tool_lines, self.tool_no_change = "", [], False
+        self.tool_out, self.tool_lines, self.tool_no_change, self.tool_stopped = "", [], False, False
         self.tool_title = title
         self.status_var.set(tr("Běží: {0}").format(title))
 
@@ -3010,6 +3130,8 @@ class App(tk.Tk):
         if real is not None:
             self.finish_preview(tool, returncode, real, no_change)
             return
+        if tool.get("archive"):
+            returncode = self.finish_archive(tool, returncode)
         if returncode == 0:
             self.log(tr("■ Hotovo\n"))
             self.status_var.set(tr("{0}: hotovo").format(tool['nazev']))
@@ -3052,6 +3174,7 @@ class App(tk.Tk):
 
     def stop_tool(self):
         if self.proc is not None:
+            self.tool_stopped = True
             self.proc.terminate()
             self.log(tr("  Zastavuji nástroj…\n"))
 
@@ -3071,6 +3194,12 @@ class App(tk.Tk):
             if not messagebox.askyesno(tr("Nástroj běží"), tr("Nástroj stále běží. Ukončit ho a zavřít?")):
                 return
             self.proc.terminate()
+            if self.archive_tmp:  # do not leave half an archive behind
+                try:
+                    self.proc.wait(5)
+                    os.remove(self.archive_tmp)
+                except (OSError, subprocess.TimeoutExpired):
+                    pass
         self.destroy()
 
 

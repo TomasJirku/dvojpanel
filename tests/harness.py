@@ -961,6 +961,8 @@ if VER >= "0.9":
     exec(open(os.path.join(os.path.dirname(__file__), 'v090.py'), encoding='utf-8').read())
 if VER >= "0.10":
     exec(open(os.path.join(os.path.dirname(__file__), 'v100.py'), encoding='utf-8').read())
+if VER >= "0.11":
+    exec(open(os.path.join(os.path.dirname(__file__), 'v110.py'), encoding='utf-8').read())
 section(shutdown)
 
 

@@ -37,6 +37,7 @@ Zástupce spouští `pythonw.exe` aktuálního Pythonu, takže se běžící okn
 | F5 / F6 | kopírovat / přesunout do druhého panelu |
 | F7 | nová složka |
 | F8 | smazat do koše (na síťovém disku trvale, program varuje) |
+| Alt+F5 | zabalit položku pod kurzorem do archivu `.7z` (7-Zip) |
 | F9 | nabídka nástrojů |
 | F1 | nápověda (ovládání a vysvětlení všech nástrojů) |
 | Ctrl+D | oblíbené složky |
@@ -71,6 +72,14 @@ F5 / F6 (i přetažení) se zeptá, co s položkami, které v cíli už jsou. So
 Složky se sloučí a volba platí pro každý soubor uvnitř. Při přesunu zůstanou nepřepsané soubory ve zdroji, nic se neztratí.
 
 U souborů od 16 MB se při kopírování ukazuje průběh v procentech ve stavovém řádku. Soubor se nejdřív zapisuje do dočasného souboru `*.dvojpanel-tmp` a teprve po dokončení nahradí cíl, takže přerušené nebo selhané kopírování nikdy nepoškodí existující soubor v cíli.
+
+## Zabalení 7-Zipem
+
+**Alt+F5** (nebo **Příkazy → Zabalit položku pod kurzorem (7-Zip)**) zabalí složku pod kurzorem v aktivním panelu do archivu `název.7z` ve stejné složce; funguje i na jeden soubor (`název.přípona.7z`). Originál zůstává, jak je. Výpis 7-Zipu je v dolním panelu, balení lze zastavit přes **Nástroje → Zastavit běžící nástroj**.
+
+- Archiv se zapisuje do dočasného souboru `název.7z.dvojpanel-tmp` a své jméno dostane až po dokončení. Když archiv už existuje, program se zeptá, jestli ho přepsat; při chybě nebo zastavení zůstane starý archiv beze změny a dočasný soubor se smaže.
+- Když 7-Zip některé soubory nepřečte (návratový kód 1), archiv vznikne a program na to upozorní; podrobnosti jsou ve výpisu. Soubory otevřené jiným programem pro zápis se balí také (`-ssw`).
+- Je potřeba nainstalovaný 7-Zip (používá se jeho `7z.exe`, nic se neinstaluje). Program ho hledá v PATH, v registru a ve složkách `Program Files\7-Zip`. Jinou cestu, např. k přenosné verzi, lze zapsat do `dvojpanel.json` jako `"cesta_7zip"`.
 
 ## Porovnání a synchronizace složek
 
@@ -120,9 +129,12 @@ Seznam je v `oblibene.json` vedle `dvojpanel.py` (lokální, není v Gitu) a lze
   "pravy_panel": "\\\\server\\projekty",
   "lista_oblibenych": true,
   "velikost_pisma": 11,
-  "jazyk": "cs"
+  "jazyk": "cs",
+  "cesta_7zip": ""
 }
 ```
+
+`cesta_7zip` je cesta k `7z.exe` pro zabalení (Alt+F5). Prázdná (výchozí) znamená, že si program nainstalovaný 7-Zip najde sám.
 
 `jazyk` je jazyk programu: `cs` (výchozí), `en`, `de` nebo `pl`. Nejsnáz se přepne v menu **Soubor → Jazyk / Language** (položka se jmenuje stejně ve všech jazycích); změna platí hned pro menu, tlačítka, hlášky i nápovědu a do `dvojpanel.json` se zapíše sama. Překlady jsou v souboru `preklady.json` vedle `dvojpanel.py`; když chybí, program to ohlásí a zůstane česky. Česky zůstávají klíče v `nastroje.json` a názvy a popisy nástrojů, systémová okna Windows jsou v jazyce Windows.
 

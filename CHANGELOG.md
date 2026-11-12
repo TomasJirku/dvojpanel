@@ -1,5 +1,14 @@
 # Changelog
 
+## 0.11.0 – 2026-11-12
+- **Zabalení 7-Zipem** (Alt+F5, Příkazy → Zabalit položku pod kurzorem): složku (nebo soubor) pod kurzorem
+  zabalí do `název.7z` ve stejné složce. Výpis 7-Zipu je v dolním panelu, zastavit lze v menu Nástroje.
+- Archiv se zapisuje do dočasného souboru a jméno dostane až po dokončení; na přepsání existujícího archivu se
+  program ptá a při chybě nebo zastavení zůstane starý archiv beze změny. Varování 7-Zipu (nepřečtené soubory)
+  program ohlásí.
+- 7-Zip (`7z.exe`) se hledá v PATH, v registru a v `Program Files\7-Zip`; jinou cestu určí `"cesta_7zip"`
+  v `dvojpanel.json`. Když chybí, program to oznámí a nic nespustí.
+
 ## 0.10.0 – 2026-11-11
 - **Jazyk programu**: Soubor → **Jazyk / Language** přepne čeština / English / Deutsch / Polski – menu, tlačítka,
   hlášky, okno porovnání i celou nápovědu (F1). Změna platí hned a uloží se do `dvojpanel.json` jako
