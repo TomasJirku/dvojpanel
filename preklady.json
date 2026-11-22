@@ -1329,6 +1329,26 @@
    "The archive was created, but 7-Zip reports a warning – some files may be missing in it. The details are in the output in the bottom panel.\n\n{0}",
    "Das Archiv wurde erstellt, aber 7-Zip meldet eine Warnung – einige Dateien können darin fehlen. Einzelheiten stehen in der Ausgabe im unteren Bereich.\n\n{0}",
    "Archiwum powstało, ale 7-Zip zgłasza ostrzeżenie – niektórych plików może w nim brakować. Szczegóły są w wyjściu w dolnym panelu.\n\n{0}"
+  ],
+  "Tmavý režim": [
+   "Dark mode",
+   "Dunkler Modus",
+   "Tryb ciemny"
+  ],
+  "Tmavý režim zapnut": [
+   "Dark mode on",
+   "Dunkler Modus ein",
+   "Tryb ciemny włączony"
+  ],
+  "Tmavý režim vypnut": [
+   "Dark mode off",
+   "Dunkler Modus aus",
+   "Tryb ciemny wyłączony"
+  ],
+  "dvojpanel.json: 'tmavy_rezim' musí být true nebo false.": [
+   "dvojpanel.json: 'tmavy_rezim' must be true or false.",
+   "dvojpanel.json: 'tmavy_rezim' muss true oder false sein.",
+   "dvojpanel.json: 'tmavy_rezim' musi mieć wartość true albo false."
   ]
  },
  "napoveda": {
@@ -1707,6 +1727,10 @@
     "• The translations are in the file `preklady.json` next to the program. When it is missing, the program stays Czech and says so.",
     "• The keys in `nastroje.json` stay Czech, and so do the names and descriptions of tools as written there. System windows (Yes / No, choosing a file) are in the language of Windows.",
     "",
+    "## Dark mode",
+    "• File → Dark mode switches the program to dark colors: the panes, menus, buttons, tool output, this help and the compare window. The change applies at once and is stored in `dvojpanel.json` as `tmavy_rezim` (`true` / `false`).",
+    "• System windows with a question (Yes / No, choosing a file) are drawn by Windows in its own colors.",
+    "",
     "## Git pull (Ctrl+G)",
     "• Commands → Git pull in the current folder downloads the new version of a project: it runs `git pull --ff-only` in the repository the folder of the active pane belongs to (any of its subfolders will do).",
     "• The output of git is in the bottom panel, ending with ■ Done or ■ Ended with an error. Then the panes are refreshed and the tools are loaded again, so new tools of the project are in the menu at once.",
@@ -1741,6 +1765,10 @@
     "• Die Übersetzungen stehen in der Datei `preklady.json` neben dem Programm. Fehlt sie, bleibt das Programm tschechisch und meldet das.",
     "• Tschechisch bleiben die Schlüssel in `nastroje.json` sowie die Namen und Beschreibungen der Tools, wie sie dort stehen. Systemfenster (Ja / Nein, Dateiauswahl) erscheinen in der Sprache von Windows.",
     "",
+    "## Dunkler Modus",
+    "• Datei → Dunkler Modus schaltet das Programm auf dunkle Farben um: Panels, Menüs, Schaltflächen, Ausgabe der Werkzeuge, diese Hilfe und das Vergleichsfenster. Die Änderung gilt sofort und wird in `dvojpanel.json` als `tmavy_rezim` gespeichert (`true` / `false`).",
+    "• Systemfenster mit einer Frage (Ja / Nein, Dateiauswahl) zeichnet Windows in seinen eigenen Farben.",
+    "",
     "## Git pull (Ctrl+G)",
     "• Befehle → Git pull im aktuellen Ordner lädt die neue Version eines Projekts: es startet `git pull --ff-only` in dem Repository, zu dem der Ordner des aktiven Panels gehört (ein beliebiger Unterordner genügt).",
     "• Die Ausgabe von git steht im unteren Bereich, am Ende ■ Fertig oder ■ Mit Fehler beendet. Danach werden die Panels aktualisiert und die Tools neu geladen, neue Tools des Projekts sind also sofort im Menü.",
@@ -1774,6 +1802,10 @@
     "• Plik → Jazyk / Language przełącza program na czeski, angielski, niemiecki lub polski: menu, przyciski, komunikaty i tę pomoc. Zmiana działa od razu i zapisuje się w `dvojpanel.json` jako `jazyk` (`cs`, `en`, `de`, `pl`).",
     "• Tłumaczenia są w pliku `preklady.json` obok programu. Gdy go brakuje, program pozostaje po czesku i informuje o tym.",
     "• Po czesku pozostają klucze w `nastroje.json` oraz nazwy i opisy narzędzi, tak jak są tam zapisane. Okna systemowe (Tak / Nie, wybór pliku) są w języku Windows.",
+    "",
+    "## Tryb ciemny",
+    "• Plik → Tryb ciemny przełącza program na ciemne kolory: panele, menu, przyciski, wyjście narzędzi, tę pomoc i okno porównania. Zmiana działa od razu i zapisuje się w `dvojpanel.json` jako `tmavy_rezim` (`true` / `false`).",
+    "• Okna systemowe z pytaniem (Tak / Nie, wybór pliku) rysuje Windows we własnych kolorach.",
     "",
     "## Git pull (Ctrl+G)",
     "• Polecenia → Git pull w bieżącym folderze pobiera nową wersję projektu: uruchamia `git pull --ff-only` w repozytorium, do którego należy folder aktywnego panelu (wystarczy dowolny jego podfolder).",

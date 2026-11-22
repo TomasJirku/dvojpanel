@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 – 2026-11-22
+- **Tmavý režim**: Soubor → **Tmavý režim** přepne program do tmavých barev – panely, menu, tlačítka, výstup
+  nástrojů, nápovědu, okno porovnání i dialogy programu, ve Windows 10/11 také tmavý titulek okna. Změna platí
+  hned a uloží se do `dvojpanel.json` jako `"tmavy_rezim"` (`true` / `false`, výchozí `false`).
+- Systémová okna Windows (Ano / Ne, výběr souboru) zůstávají v barvách Windows.
+
 ## 0.11.0 – 2026-11-12
 - **Zabalení 7-Zipem** (Alt+F5, Příkazy → Zabalit položku pod kurzorem): složku (nebo soubor) pod kurzorem
   zabalí do `název.7z` ve stejné složce. Výpis 7-Zipu je v dolním panelu, zastavit lze v menu Nástroje.

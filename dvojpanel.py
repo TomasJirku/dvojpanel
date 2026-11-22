@@ -23,8 +23,9 @@ Ovládání:
   Klik na záhlaví sloupce = řazení (▲ / ▼ ukazuje sloupec a směr)
   F1 nápověda (také vysvětlení všech nástrojů)
   Soubor → Jazyk / Language: čeština, English, Deutsch, Polski (dvojpanel.json: jazyk)
+  Soubor → Tmavý režim (dvojpanel.json: tmavy_rezim)
 """
-__version__ = "0.11.0"
+__version__ = "0.12.0"
 
 import codecs
 import json
@@ -57,8 +58,26 @@ PLACEHOLDER = re.compile(r"\{(\w+)(?::([^}]*))?\}")
 CHUNK = 1024 * 1024
 BIG_FILE = 16 * 1024 * 1024  # files from this size up report progress in percent
 MTIME_TOLERANCE = 2  # seconds; FAT and some network shares store times with 2 s precision
-MARK_COLOR = "#c8102e"
-DROP_COLOR = "#cfe3ff"
+# colors drawn by the program itself; "tmavy_rezim" in dvojpanel.json switches to DARK_COLORS
+LIGHT_COLORS = {"dark": False, "dir": "#0b4ea2", "mark": "#c8102e", "drop": "#cfe3ff", "marker_on": "#2e9e3e",
+                "marker_off": "#999999", "muted": "#666666", "panel": "#f4f4f4", "code": "#eeeeee",
+                "sync_right": "#2e7d32", "conflict": "#b26a00", "same": "#888888"}
+DARK_COLORS = {"dark": True, "dir": "#6cb6ff", "mark": "#ff6b6b", "drop": "#2f4a6b", "marker_on": "#4caf50",
+               "marker_off": "#666666", "muted": "#9a9a9a", "panel": "#252526", "code": "#3a3a3a",
+               "sync_right": "#81c784", "conflict": "#ffb74d", "same": "#8a8a8a",
+               # used only in the dark mode: the ttk theme "clam" and Tk's classic widgets get these
+               "bg": "#2b2b2b", "fg": "#e0e0e0", "field": "#1e1e1e", "border": "#3c3c3c", "button": "#3a3a3a",
+               "active": "#454545", "select": "#264f78", "select_fg": "#ffffff", "disabled": "#7a7a7a"}
+colors = dict(LIGHT_COLORS)  # the colors in use; set by App.apply_theme
+# Tk's classic widgets (class, option database name, key in DARK_COLORS); ttk widgets get theirs from the theme
+CLASSIC_COLORS = (("Toplevel", "background", "bg"), ("Frame", "background", "bg"), ("Label", "background", "bg"),
+                  ("Label", "foreground", "fg"), ("Text", "background", "field"), ("Text", "foreground", "fg"),
+                  ("Text", "insertBackground", "fg"), ("Text", "selectBackground", "select"),
+                  ("Text", "selectForeground", "select_fg"), ("Listbox", "background", "field"),
+                  ("Listbox", "foreground", "fg"), ("Listbox", "selectBackground", "select"),
+                  ("Listbox", "selectForeground", "select_fg"), ("Menu", "background", "bg"),
+                  ("Menu", "foreground", "fg"), ("Menu", "activeBackground", "select"),
+                  ("Menu", "activeForeground", "select_fg"), ("Menu", "selectColor", "fg"))
 DRAG_THRESHOLD = 6  # pixels the mouse must travel before a press becomes a drag
 RENAME_DELAY = 600  # ms; a slow second click on the name starts renaming (like Explorer)
 DEFAULT_FONT_SIZE = 9  # points, the size Tk uses on Windows; "velikost_pisma" in dvojpanel.json changes it
@@ -204,6 +223,30 @@ def is_network_path(path):
 def scaled(size):
     """A font size written for the default setting, moved by the user's choice."""
     return size + font_delta
+
+
+def set_title_bar(win, force=False, tries=40):
+    """Dark title bar of a window in the dark mode (Windows 10 1809 and newer; elsewhere nothing). force also
+    sets the light one, for a window that may have been dark."""
+    if not IS_WINDOWS or not (colors["dark"] or force):
+        return
+    try:
+        import ctypes
+        win.update_idletasks()
+        hwnd = ctypes.windll.user32.GetParent(win.winfo_id())
+        if not hwnd:  # Windows has not created the window's frame yet (the program is just starting)
+            if tries:
+                win.after(50, set_title_bar, win, force, tries - 1)
+            return
+        value = ctypes.c_int(1 if colors["dark"] else 0)
+        for attribute in (20, 19):  # DWMWA_USE_IMMERSIVE_DARK_MODE; 19 in Windows 10 before 20H1
+            if ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, attribute, ctypes.byref(value),
+                                                          ctypes.sizeof(value)) == 0:
+                break
+        # SWP_NOSIZE | SWP_NOMOVE | SWP_NOZORDER | SWP_FRAMECHANGED: draw the title bar again now
+        ctypes.windll.user32.SetWindowPos(hwnd, 0, 0, 0, 0, 0, 0x27)
+    except (OSError, AttributeError, tk.TclError):
+        pass
 
 
 def find_git_root(path):
@@ -671,7 +714,8 @@ def write_json(path, data):
 # ---------------------------------------------------------------- settings (dvojpanel.json)
 
 SETTINGS_DEFAULTS = {"levy_panel": "%USERPROFILE%", "pravy_panel": "%USERPROFILE%", "lista_oblibenych": True,
-                     "velikost_pisma": DEFAULT_FONT_SIZE, "jazyk": "cs", "cesta_7zip": ""}
+                     "velikost_pisma": DEFAULT_FONT_SIZE, "jazyk": "cs", "cesta_7zip": "",
+                     "tmavy_rezim": False}
 
 
 def load_settings():
@@ -690,6 +734,8 @@ def load_settings():
             return settings, tr("dvojpanel.json: '{0}' musí být cesta ke složce.").format(key)
     if "lista_oblibenych" in data and not isinstance(data["lista_oblibenych"], bool):
         return settings, tr("dvojpanel.json: 'lista_oblibenych' musí být true nebo false.")
+    if "tmavy_rezim" in data and not isinstance(data["tmavy_rezim"], bool):
+        return settings, tr("dvojpanel.json: 'tmavy_rezim' musí být true nebo false.")
     size = data.get("velikost_pisma", DEFAULT_FONT_SIZE)
     if isinstance(size, bool) or not isinstance(size, int) or not FONT_SIZE_MIN <= size <= FONT_SIZE_MAX:
         return settings, (tr("dvojpanel.json: 'velikost_pisma' musí být celé číslo {0} až {1} "
@@ -937,6 +983,7 @@ def show_modal(parent, win, focus):
     x = parent.winfo_rootx() + max((parent.winfo_width() - win.winfo_reqwidth()) // 2, 0)
     y = parent.winfo_rooty() + max((parent.winfo_height() - win.winfo_reqheight()) // 3, 0)
     win.geometry(f"+{x}+{y}")
+    set_title_bar(win)
     win.grab_set()
     focus.focus_set()
     parent.wait_window(win)
@@ -997,7 +1044,7 @@ def ask_tool_input(parent, title, context, prompt):
     if context:
         ttk.Label(body, text=tr("Nástroj vypsal:")).pack(anchor="w")
         text = tk.Text(body, height=min(len(context), 14), width=80, wrap="word", font=("Consolas", scaled(9)),
-                       relief="flat", background="#f4f4f4")
+                       relief="flat", background=colors["panel"])
         text.insert("1.0", "\n".join(context))
         text.configure(state="disabled")
         text.pack(fill="x", pady=(2, 8))
@@ -1007,7 +1054,7 @@ def ask_tool_input(parent, title, context, prompt):
     entry = ttk.Entry(body, textvariable=var, width=60)
     entry.pack(fill="x", pady=(4, 0))
     ttk.Label(body, text=tr("Enter = odeslat (i prázdné = výchozí volba nástroje)   Esc = ukončit vstup"),
-              foreground="#666666").pack(anchor="w", pady=(4, 0))
+              foreground=colors["muted"]).pack(anchor="w", pady=(4, 0))
     result = {"value": None}
 
     def send():
@@ -1045,7 +1092,7 @@ class Pane(ttk.Frame):
 
         top = ttk.Frame(self)
         top.pack(fill="x", pady=(0, 2))
-        self.marker = tk.Label(top, text="●", fg="#999999")
+        self.marker = tk.Label(top, text="●", fg=colors["marker_off"])
         self.marker.pack(side="left")
         self.drive_var = tk.StringVar()
         self.drive_box = ttk.Combobox(top, textvariable=self.drive_var, values=list_drives(),
@@ -1066,9 +1113,7 @@ class Pane(ttk.Frame):
         self.tree.column("type", width=120, stretch=False)
         self.tree.column("size", width=90, anchor="e", stretch=False)
         self.tree.column("date", width=125, anchor="center", stretch=False)
-        self.tree.tag_configure("dir", foreground="#0b4ea2")
-        self.tree.tag_configure("marked", foreground=MARK_COLOR)  # configured later = wins over "dir"
-        self.tree.tag_configure("drop", background=DROP_COLOR)
+        self.color_tags()
         scroll = ttk.Scrollbar(body, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
         self.tree.pack(side="left", fill="both", expand=True)
@@ -1270,7 +1315,13 @@ class Pane(ttk.Frame):
         self.status_var.set(f"{word} {len(sel)} z {len(self.items)}, {human_size(total)}")
 
     def set_marker(self, active):
-        self.marker.configure(fg="#2e9e3e" if active else "#999999")
+        self.marker.configure(fg=colors["marker_on"] if active else colors["marker_off"])
+
+    def color_tags(self):
+        """Colors of folders, marks and the drop target; again when the dark mode is switched."""
+        self.tree.tag_configure("dir", foreground=colors["dir"])
+        self.tree.tag_configure("marked", foreground=colors["mark"])  # configured later = wins over "dir"
+        self.tree.tag_configure("drop", background=colors["drop"])
 
     # -- rename in place
     def start_rename(self):
@@ -1396,6 +1447,7 @@ class SyncWindow(tk.Toplevel):
         self.app = app
         self.title(tr("Porovnat a synchronizovat složky"))
         self.geometry("1050x620")
+        self.after_idle(set_title_bar, self)
         self.rows = []
         self.compared = None  # (left, right) the rows belong to
         self.running = False
@@ -1432,9 +1484,7 @@ class SyncWindow(tk.Toplevel):
         for col, title, width, anchor, stretch in cols:
             self.tree.heading(col, text=title)
             self.tree.column(col, width=width, anchor=anchor, stretch=stretch)
-        for status, color in ((LEFT_ONLY, "#0b4ea2"), (RIGHT_ONLY, "#2e7d32"), (DIFFERENT, MARK_COLOR),
-                              (TYPE_CONFLICT, "#b26a00"), (SAME, "#888888")):
-            self.tree.tag_configure(status, foreground=color)
+        self.color_tags()
         scroll = ttk.Scrollbar(body, orient="vertical", command=self.tree.yview)
         self.tree.configure(yscrollcommand=scroll.set)
         self.tree.pack(side="left", fill="both", expand=True)
@@ -1551,6 +1601,11 @@ class SyncWindow(tk.Toplevel):
         self.set_buttons()
         self.progress_var.set(tr("Porovnáno, položek: {0}").format(len(rows)) + (tr(", chyb: {0}").format(len(errors)) if errors else ""))
         self.show_errors(errors)
+
+    def color_tags(self):
+        for status, color in ((LEFT_ONLY, colors["dir"]), (RIGHT_ONLY, colors["sync_right"]),
+                              (DIFFERENT, colors["mark"]), (TYPE_CONFLICT, colors["conflict"]), (SAME, colors["same"])):
+            self.tree.tag_configure(status, foreground=color)
 
     def refresh(self):
         def fmt(info):
@@ -1769,6 +1824,11 @@ hlášky i tuto nápovědu. Změna platí hned a uloží se do `dvojpanel.json` 
 • Česky zůstávají klíče v `nastroje.json` a názvy a popisy nástrojů, jak jsou v něm zapsané. Systémová okna \
 (Ano / Ne, výběr souboru) jsou v jazyce Windows.
 
+## Tmavý režim
+• Soubor → Tmavý režim přepne program do tmavých barev: panely, menu, tlačítka, výstup nástrojů, nápovědu \
+i okno porovnání. Změna platí hned a uloží se do `dvojpanel.json` jako `tmavy_rezim` (`true` / `false`).
+• Systémová okna s dotazem (Ano / Ne, výběr souboru) kreslí Windows v jeho vlastních barvách.
+
 ## Git pull (Ctrl+G)
 • Příkazy → Git pull v aktuální složce stáhne novou verzi projektu: spustí `git pull --ff-only` \
 v repozitáři, do kterého patří složka aktivního panelu (stačí být v kterékoli jeho podsložce).
@@ -1936,6 +1996,7 @@ class HelpWindow(tk.Toplevel):
         self.app = app
         self.title(tr("Nápověda – Dvojpanel {0}").format(__version__))
         self.geometry("980x640")
+        self.after_idle(set_title_bar, self)
         self.topics = list(HELP_TOPICS)
         self.listbox = tk.Listbox(self, activestyle="none", exportselection=False, width=28,
                                   font=("Segoe UI", scaled(10)))
@@ -1951,9 +2012,9 @@ class HelpWindow(tk.Toplevel):
         self.text.pack(side="left", fill="both", expand=True, pady=6)
         self.text.tag_configure("h1", font=("Segoe UI", scaled(15), "bold"), spacing3=8)
         self.text.tag_configure("h2", font=("Segoe UI", scaled(11), "bold"), spacing1=12, spacing3=4,
-                                foreground="#0b4ea2")
+                                foreground=colors["dir"])
         self.text.tag_configure("bold", font=("Segoe UI", scaled(10), "bold"))
-        self.text.tag_configure("code", font=("Consolas", scaled(10)), background="#eeeeee")
+        self.text.tag_configure("code", font=("Consolas", scaled(10)), background=colors["code"])
         self.text.tag_configure("key", font=("Consolas", scaled(10), "bold"))
         self.text.tag_configure("row", lmargin1=10, lmargin2=250)  # a wrapped row continues under its text
         self.text.tag_configure("bullet", lmargin1=10, lmargin2=24)
@@ -2079,6 +2140,8 @@ class App(tk.Tk):
         self.settings, self.settings_error = load_settings()
         self.language_error = set_language(self.settings["jazyk"])
         self.base_fonts = None  # sizes of Tk's named fonts before "velikost_pisma" changed them
+        self.base_theme = ttk.Style(self).theme_use()  # the light mode ("vista" on Windows)
+        self.light_options = None  # Tk's colors of CLASSIC_COLORS; set by apply_theme
         self.drag = None  # {"pane", "items", "target"} while items are dragged with the mouse
         self.last_dirs = {}  # (tool, label) -> folder last used in a {vybrat_soubor}/{ulozit_soubor} dialog
         # output of the running tool: lines are logged when complete; the unfinished rest may be a prompt
@@ -2136,6 +2199,7 @@ class App(tk.Tk):
         for seq in ("<Control-Key-0>", "<Control-KP_0>"):
             self.bind(seq, lambda e: self.change_font_size(None))
         self.apply_font_size()
+        self.apply_theme(startup=True)
         self.bind("<Escape>", lambda e: self.drag_cancel() if self.drag else self.cancel_job())
         self.protocol("WM_DELETE_WINDOW", self.on_close)
         self.build_menu()
@@ -2189,10 +2253,7 @@ class App(tk.Tk):
 
     def apply_language(self):
         """Rebuild everything that shows texts: menus, the F-key bar, headings, favorites, open windows."""
-        old_menu = self.nametowidget(self["menu"]) if self["menu"] else None
-        self.build_menu()  # also fills the tool and favorites menus and the favorites bar
-        if old_menu is not None:
-            self.after_idle(old_menu.destroy)  # not now: this may run from an item of that very menu
+        self.rebuild_menu()
         self.build_key_bar()
         for window in (self.help_window, self.sync_window):
             if window is not None and window.winfo_exists() and not getattr(window, "running", False):
@@ -2201,6 +2262,90 @@ class App(tk.Tk):
         for pane in (self.left, self.right):
             pane.show_sort_headings()
         self.status_var.set(tr("Jazyk: {0}").format(LANGUAGES[language]))
+
+    def rebuild_menu(self):
+        old_menu = self.nametowidget(self["menu"]) if self["menu"] else None
+        self.build_menu()  # also fills the tool and favorites menus and the favorites bar
+        if old_menu is not None:
+            self.after_idle(old_menu.destroy)  # not now: this may run from an item of that very menu
+
+    # -- dark mode
+    def toggle_dark_mode(self):
+        """Soubor → Tmavý režim: store it in dvojpanel.json and recolor the whole program."""
+        dark = self.dark_var.get()
+        self.dark_var.set(self.settings["tmavy_rezim"])  # the menu shows the new state only when it was stored
+        try:
+            save_setting("tmavy_rezim", dark)
+        except OSError as e:
+            messagebox.showerror(tr("Nastavení"), tr("Nelze uložit dvojpanel.json:\n{0}").format(e))
+            return
+        self.settings["tmavy_rezim"] = dark
+        self.apply_theme()
+        self.status_var.set(tr("Tmavý režim zapnut") if dark else tr("Tmavý režim vypnut"))
+
+    def apply_theme(self, startup=False):
+        """Use "tmavy_rezim": the ttk theme (the system one, or "clam" in dark colors), Tk's classic widgets
+        (texts, lists, menus) through the option database and directly for those that exist, the colors
+        the program draws itself and the title bars."""
+        colors.clear()
+        colors.update(DARK_COLORS if self.settings["tmavy_rezim"] else LIGHT_COLORS)
+        style = ttk.Style(self)
+        if self.light_options is None:  # Tk's own colors of its classic widgets, before anything changed them
+            self.light_options = {}
+            for cls, option, _ in CLASSIC_COLORS:
+                probe = getattr(tk, "Frame" if cls == "Toplevel" else cls)(self)
+                self.light_options[cls, option] = probe.cget(option.lower())
+                probe.destroy()
+        values = {(cls, option): colors[key] if colors["dark"] else self.light_options[cls, option]
+                  for cls, option, key in CLASSIC_COLORS}
+        for (cls, option), value in values.items():  # widgets created from now on
+            self.option_add(f"*{cls}.{option}", value)
+        if colors["dark"]:
+            c = colors
+            style.theme_use("clam")
+            style.configure(".", background=c["bg"], foreground=c["fg"], fieldbackground=c["field"],
+                            bordercolor=c["border"], lightcolor=c["bg"], darkcolor=c["bg"], troughcolor=c["bg"],
+                            selectbackground=c["select"], selectforeground=c["select_fg"], insertcolor=c["fg"],
+                            arrowcolor=c["fg"], focuscolor=c["border"])
+            style.map(".", background=[("disabled", c["bg"]), ("active", c["active"])],
+                      foreground=[("disabled", c["disabled"])])
+            for name in ("TButton", "TScrollbar", "Treeview.Heading"):
+                style.configure(name, background=c["button"], foreground=c["fg"])
+                style.map(name, background=[("pressed", c["select"]), ("active", c["active"])])
+            style.configure("Toolbutton", background=c["bg"])
+            style.map("Toolbutton", background=[("pressed", c["select"]), ("active", c["active"])])
+            style.configure("Treeview", background=c["field"], fieldbackground=c["field"], foreground=c["fg"])
+            style.map("Treeview", background=[("selected", c["select"])], foreground=[("selected", c["select_fg"])])
+            style.map("TEntry", fieldbackground=[("readonly", c["bg"])])
+            style.map("TCombobox", fieldbackground=[("readonly", c["field"])], foreground=[("readonly", c["fg"])],
+                      selectbackground=[("readonly", c["field"])], selectforeground=[("readonly", c["fg"])],
+                      background=[("active", c["active"])])
+            style.configure("TCheckbutton", indicatorbackground=c["field"], indicatorforeground=c["fg"])
+            style.map("TCheckbutton", indicatorbackground=[("pressed", c["active"])],
+                      background=[("active", c["bg"])])
+            style.configure("TProgressbar", background=c["select"], troughcolor=c["field"])
+        elif style.theme_use() != self.base_theme:
+            style.theme_use(self.base_theme)
+        if startup and not colors["dark"]:
+            return  # nothing has been colored yet
+        todo = [self]  # widgets that exist already
+        while todo:
+            widget = todo.pop()
+            todo.extend(widget.winfo_children())
+            cls = "Toplevel" if widget.winfo_class() == "Tk" else widget.winfo_class()
+            own = {option.lower(): value for (kind, option), value in values.items() if kind == cls}
+            if own:
+                widget.configure(**own)
+        for pane in (self.left, self.right):
+            pane.color_tags()
+        self.set_active(self.active)
+        self.after_idle(set_title_bar, self, True)
+        if self.sync_window is not None and self.sync_window.winfo_exists():
+            self.sync_window.color_tags()
+            self.after_idle(set_title_bar, self.sync_window, True)
+        if not startup:
+            self.rebuild_menu()  # the menu bar's own copies of the menus take the new colors only like this
+            self.apply_font_size()  # the row height belongs to a ttk theme; also closes the help window
 
     # -- settings (dvojpanel.json)
     def open_start_folders(self):
@@ -2281,6 +2426,8 @@ class App(tk.Tk):
                 messagebox.showerror(tr("Jazyk"), self.language_error)
             self.apply_language()
         self.apply_font_size()
+        if self.settings["tmavy_rezim"] != colors["dark"]:
+            self.apply_theme()
         self.show_favorites_bar(self.settings["lista_oblibenych"])
         self.open_start_folders()
         self.status_var.set(tr("Nastavení načteno"))
@@ -2582,6 +2729,8 @@ class App(tk.Tk):
                                       command=lambda c=code: self.change_language(c))
         # always readable, whatever language is on: the way back from a language one does not speak
         file_menu.add_cascade(label="Jazyk / Language", menu=lang_menu)
+        self.dark_var = tk.BooleanVar(value=self.settings["tmavy_rezim"])
+        file_menu.add_checkbutton(label=tr("Tmavý režim"), variable=self.dark_var, command=self.toggle_dark_mode)
         file_menu.add_separator()
         file_menu.add_command(label=tr("Vytvořit zástupce v nabídce Start…"), command=self.make_shortcut)
         file_menu.add_separator()

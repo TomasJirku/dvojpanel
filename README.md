@@ -130,9 +130,12 @@ Seznam je v `oblibene.json` vedle `dvojpanel.py` (lokální, není v Gitu) a lze
   "lista_oblibenych": true,
   "velikost_pisma": 11,
   "jazyk": "cs",
-  "cesta_7zip": ""
+  "cesta_7zip": "",
+  "tmavy_rezim": false
 }
 ```
+
+`tmavy_rezim` (`true` / `false`, výchozí `false`) přepne program do tmavých barev. Nejsnáz v menu **Soubor → Tmavý režim**; změna platí hned pro panely, menu, tlačítka, výstup nástrojů, nápovědu i okno porovnání a do `dvojpanel.json` se zapíše sama. Systémová okna Windows (Ano / Ne, výběr souboru) zůstanou v barvách Windows.
 
 `cesta_7zip` je cesta k `7z.exe` pro zabalení (Alt+F5). Prázdná (výchozí) znamená, že si program nainstalovaný 7-Zip najde sám.
 
