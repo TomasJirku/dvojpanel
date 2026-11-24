@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.1 – 2026-11-24
+- **Aktivní panel je lépe vidět** (hlavně v tmavém režimu): nad aktivním panelem je modrá lišta a v neaktivním
+  panelu je vybraný řádek jen šedě ztlumený, zvýrazněný barvou výběru je jen v aktivním panelu.
+
 ## 0.12.0 – 2026-11-22
 - **Tmavý režim**: Soubor → **Tmavý režim** přepne program do tmavých barev – panely, menu, tlačítka, výstup
   nástrojů, nápovědu, okno porovnání i dialogy programu, ve Windows 10/11 také tmavý titulek okna. Změna platí

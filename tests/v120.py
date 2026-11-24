@@ -109,5 +109,38 @@ def v120_dark_mode():
     app.settings = dp.load_settings()[0]
 
 
-for fn in (v120_dark_mode,):
+def v121_active_pane():
+    """0.12.1 the active pane has a colored strip, the inactive one dims its selection (light and dark)"""
+    if dp.SETTINGS_FILE.exists():
+        os.remove(dp.SETTINGS_FILE)
+    app.left.load(L); app.right.load(R)
+
+    def state(pane):
+        return str(pane.accent["background"]), str(pane.tree["style"])
+
+    for dark in (False, True):
+        app.settings["tmavy_rezim"] = dark
+        app.apply_theme()
+        pump(timeout=0.2)
+        c = dp.colors
+        name = "dark" if dark else "light"
+        app.set_active(app.left)
+        check(f"{name}: left active = accent strip and normal selection, right dimmed",
+              state(app.left) == (c["accent"], "Treeview") and state(app.right) == (c["accent_off"], "Inactive.Treeview"),
+              (state(app.left), state(app.right)))
+        key(app.left.tree, "<Tab>")
+        check(f"{name}: Tab moves the strip and the dimming", app.active is app.right
+              and state(app.right) == (c["accent"], "Treeview") and state(app.left) == (c["accent_off"], "Inactive.Treeview"),
+              (state(app.left), state(app.right)))
+        sel = {tuple(str(x) for x in spec[:-1]): str(spec[-1])  # [(state…, value)]
+               for spec in dp.ttk.Style(app).map("Inactive.Treeview", "background")}
+        check(f"{name}: the inactive pane shows selected rows in the dim color",
+              ("selected",) in sel and sel[("selected",)] == c["dim_select"], sel)
+    app.settings["tmavy_rezim"] = False
+    app.apply_theme()
+    app.set_active(app.left)
+    pump(timeout=0.2)
+
+
+for fn in (v120_dark_mode, v121_active_pane):
     section(fn)

@@ -25,7 +25,7 @@ Ovládání:
   Soubor → Jazyk / Language: čeština, English, Deutsch, Polski (dvojpanel.json: jazyk)
   Soubor → Tmavý režim (dvojpanel.json: tmavy_rezim)
 """
-__version__ = "0.12.0"
+__version__ = "0.12.1"
 
 import codecs
 import json
@@ -61,10 +61,13 @@ MTIME_TOLERANCE = 2  # seconds; FAT and some network shares store times with 2 s
 # colors drawn by the program itself; "tmavy_rezim" in dvojpanel.json switches to DARK_COLORS
 LIGHT_COLORS = {"dark": False, "dir": "#0b4ea2", "mark": "#c8102e", "drop": "#cfe3ff", "marker_on": "#2e9e3e",
                 "marker_off": "#999999", "muted": "#666666", "panel": "#f4f4f4", "code": "#eeeeee",
-                "sync_right": "#2e7d32", "conflict": "#b26a00", "same": "#888888"}
+                "sync_right": "#2e7d32", "conflict": "#b26a00", "same": "#888888",
+                # the active pane: a strip above it; the inactive one shows its selected rows dimmed
+                "accent": "#0078d4", "accent_off": "#d0d0d0", "dim_select": "#d9d9d9", "dim_select_fg": "#000000"}
 DARK_COLORS = {"dark": True, "dir": "#6cb6ff", "mark": "#ff6b6b", "drop": "#2f4a6b", "marker_on": "#4caf50",
                "marker_off": "#666666", "muted": "#9a9a9a", "panel": "#252526", "code": "#3a3a3a",
                "sync_right": "#81c784", "conflict": "#ffb74d", "same": "#8a8a8a",
+               "accent": "#3d9bff", "accent_off": "#3c3c3c", "dim_select": "#3a3d41", "dim_select_fg": "#c8c8c8",
                # used only in the dark mode: the ttk theme "clam" and Tk's classic widgets get these
                "bg": "#2b2b2b", "fg": "#e0e0e0", "field": "#1e1e1e", "border": "#3c3c3c", "button": "#3a3a3a",
                "active": "#454545", "select": "#264f78", "select_fg": "#ffffff", "disabled": "#7a7a7a"}
@@ -1092,6 +1095,8 @@ class Pane(ttk.Frame):
 
         top = ttk.Frame(self)
         top.pack(fill="x", pady=(0, 2))
+        self.accent = tk.Frame(self, height=4)  # colored above the active pane (set_marker)
+        self.accent.pack(fill="x", pady=(0, 2), before=top)
         self.marker = tk.Label(top, text="●", fg=colors["marker_off"])
         self.marker.pack(side="left")
         self.drive_var = tk.StringVar()
@@ -1316,6 +1321,8 @@ class Pane(ttk.Frame):
 
     def set_marker(self, active):
         self.marker.configure(fg=colors["marker_on"] if active else colors["marker_off"])
+        self.accent.configure(background=colors["accent"] if active else colors["accent_off"])
+        self.tree.configure(style="Treeview" if active else "Inactive.Treeview")
 
     def color_tags(self):
         """Colors of folders, marks and the drop target; again when the dark mode is switched."""
@@ -1693,7 +1700,7 @@ spouštět vlastní skripty – v menu Nástroje.
 
 ## Okno
 • Nahoře lišta oblíbených složek, pod ní dva panely se soubory, dole výstup nástrojů a stavový řádek.
-• Aktivní panel má zelenou tečku vlevo nahoře. `Tab` přepíná mezi panely.
+• Aktivní panel má nad sebou modrou lištu a zelenou tečku vlevo nahoře; v neaktivním panelu je vybraný řádek jen šedý. `Tab` přepíná mezi panely.
 • Kopírování a přesun jdou vždy z aktivního panelu do druhého.
 • Do adresního řádku nad panelem lze napsat cestu a stisknout `Enter`.
 
@@ -2326,6 +2333,9 @@ class App(tk.Tk):
             style.configure("TProgressbar", background=c["select"], troughcolor=c["field"])
         elif style.theme_use() != self.base_theme:
             style.theme_use(self.base_theme)
+        # the inactive pane's selected rows (styles belong to a ttk theme: set again after a switch)
+        style.map("Inactive.Treeview", background=[("selected", colors["dim_select"])],
+                  foreground=[("selected", colors["dim_select_fg"])])
         if startup and not colors["dark"]:
             return  # nothing has been colored yet
         todo = [self]  # widgets that exist already

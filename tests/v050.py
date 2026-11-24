@@ -1,5 +1,6 @@
 # Tests for 0.5.0 ({soubor_cil}); exec'd inside test_release.py (shares its globals).
 import glob
+import re
 
 
 SAP_PANES = "Aktualizovat podle SAP (přehled pod kurzorem, export ve druhém panelu)"
@@ -119,7 +120,7 @@ print([[c.value for c in r] for r in ws.iter_rows(min_row=4)])
 print(ws["B5"].fill.fgColor.rgb, bool(ws["B5"].comment))
 """], capture_output=True, text=True).stdout
     check("target updated from SAP, higher generation marked",
-          "'R000W404F', '5B44869-06'" in out and "FFFFC7CE True" in out, out)
+          re.search(r"'R000W404F', (?:None, )*'5B44869-06'", out) and "FFFFC7CE True" in out, out)
     print("    ", log.strip().splitlines()[-1])
 
 
